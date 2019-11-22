@@ -45,16 +45,22 @@
         </v-alert>
       </div>
     </v-flex>
+    <registerModal :toggleModal="toggleModal" />
   </v-layout>
 </template>
 
 <script>
+import registerModal from '@/components/registerModal'
 export default {
   layout: 'auth',
+  components: {
+    registerModal
+  },
   data () {
     return {
       username: '',
-      password: ''
+      password: '',
+      toggleModal: false
     }
   }
 }
