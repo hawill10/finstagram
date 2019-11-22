@@ -22,6 +22,7 @@ CREATE TABLE Photo (
     allFollowers Boolean,
     caption VARCHAR(100),
     photoPoster VARCHAR(20),
+    photoImage LONGBLOB,
     PRIMARY KEY (photoID),
     FOREIGN KEY(photoPoster) REFERENCES Person(username)
 );

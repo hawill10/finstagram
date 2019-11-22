@@ -1,5 +1,5 @@
 #Import Flask Library
-from flask import Flask, render_template, request, session, url_for, redirect
+from flask import Flask, render_template, request, session, url_for, redirect, jsonify
 from flask_cors import CORS
 import pymysql.cursors
 import os
@@ -26,18 +26,8 @@ conn = pymysql.connect(host='localhost',
 def index():
     return render_template('index.html')
 
-#Define route for login
-@app.route('/login')
-def login():
-    return render_template('login.html')
-
-#Define route for register
-@app.route('/register')
-def register():
-    return render_template('register.html')
-
 #Authenticates the login
-@app.route('/loginAuth', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def loginAuth():
     #grabs information from the forms
     username = request.form['username']
@@ -64,7 +54,7 @@ def loginAuth():
         return render_template('login.html', error=error)
 
 #Authenticates the register
-@app.route('/registerAuth', methods=['GET', 'POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def registerAuth():
     #grabs information from the forms
     username = request.form['username']
@@ -96,16 +86,43 @@ def registerAuth():
 
 @app.route('/feed')
 def home():
+    response = {"status" : 1}
     user = session['username']
-    cursor = conn.cursor()
-    query = 'SELECT ts, blog_post FROM blog WHERE username = %s ORDER BY ts DESC'
-    cursor.execute(query, (user))
-    data = cursor.fetchall()
-    cursor.close()
-    return render_template('home.html', username=user, posts=data)
+    if (user):
+        try:
+            with conn.cursor() as cursor:
+                query = """SELECT photoImage, photoPoster, caption, postingdate
+                        FROM Photo AS P
+                        WHERE (allFollowers = True AND photoPoster IN (SELECT username_followed
+                                                                        FROM Follow
+                                                                        WHERE username_follower = %s AND
+                                                                            username_followed = P.photoPoster AND
+                                                                            followstatus = True))
+                            OR
+                            photoID IN (SELECT photoID
+                                        FROM SharedWith JOIN BelongTo ON (SharedWith.groupOwner = BelongTo.owner_username
+                                                                            AND SharedWith.groupName = BelongTo.groupName)
+                                        WHERE member_username = %s AND owner_username = P.photoPoster AND photoID = P.photoID
+                                        )
+                        ORDER BY postingdate DESC"""
+                cursor.execute(query, (user, user))
+                data = cursor.fetchall()
+                response['data'] = data
+                return jsonify(response)
+        except Exception as error:
+            print(error)
 
-# @app.route('/feed/<photo_id>')
-# def specificPhoto_view(photo_id):
+    else:
+        response["status"] = 0
+        response["errorMsg"] = "You have to login"
+        return jsonify(response)
+    
+
+    return jsonify(response)
+
+@app.route('/feed/<photo_id>')
+def specificPhoto_view(photo_id):
+    user 
 
         
 # @app.route('/post', methods=['GET', 'POST'])
