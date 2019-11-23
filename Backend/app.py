@@ -6,6 +6,11 @@ import os
 import hashlib
 import datetime
 
+# For Logging on Console
+import sys
+
+SALT = 'cs3083'
+
 #Initialize the app from Flask
 app = Flask(__name__)
 
@@ -36,13 +41,14 @@ def loginAuth():
 
     #grabs information from the forms
     username = request_data.get('username')
-    password = request_data.get('password')
+    password = request_data.get('password') + SALT
+    hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
     #cursor used to send queries
     cursor = conn.cursor()
     #executes query
     query = 'SELECT * FROM Person WHERE username = %s and password = %s'
-    cursor.execute(query, (username, password))
+    cursor.execute(query, (username, hashed_password))
     #stores the results in a variable
     data = cursor.fetchone()
     #use fetchall() if you are expecting more than 1 data row
@@ -55,45 +61,46 @@ def loginAuth():
         response['username'] = username
     else:
         #returns an error message to the html page
-        errorMsg = 'Invalid login or username'
+        errorMsg = 'Invalid username or password'
         status = 401
         response['errMsg'] = errorMsg
-        print(response)
 
     result = jsonify(response)
     result.status_code = status
     return result
 
 #Authenticates the register
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/register', methods=['POST'])
 def registerAuth():
+    response = {}
+    status = 201
+
+    post_data = request.get_json()
+
+    print(post_data, file=sys.stdout)
+
     #grabs information from the forms
-    username = request.form['username']
-    password = request.form['password']
-    fname = request.form['fname']
-    lname = request.form['lname']
-    bio = request.form['bio']
+    username = post_data.get('username')
+    password = post_data.get('password') + SALT
+    fname = post_data.get('fname')
+    lname = post_data.get('lname')
+    bio = post_data.get('bio')
 
-    #cursor used to send queries
-    cursor = conn.cursor()
-    #executes query
-    query = 'SELECT * FROM Person WHERE username = %s'
-    cursor.execute(query, (username))
-    #stores the results in a variable
-    data = cursor.fetchone()
-    #use fetchall() if you are expecting more than 1 data row
-    error = None
-    if(data):
-        #If the previous query returns data, then user exists
-        error = "This username already exists"
-        return render_template('register.html', error = error)
-    else:
-        ins = 'INSERT INTO user VALUES(%s, %s, %s, %s, %s)'
-        cursor.execute(ins, (username, password, fname, lname, bio))
-        conn.commit()
-        cursor.close()
-        return render_template('index.html')
+    hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
+    try:
+        with conn.cursor() as cursor:
+            query = "INSERT INTO Person (username, password, firstName, lastName, bio) VALUES (%s, %s, %s, %s, %s)"
+            cursor.execute(query, (username, hashed_password, fname, lname, bio))
+            conn.commit()
+            cursor.close()
+    except pymysql.err.IntegrityError:
+        response['errMsg'] = "%s is already taken." % (username)  
+        status = 400
+
+    result = jsonify(response)
+    result.status_code = status
+    return result
 
 @app.route('/feed')
 def home():
