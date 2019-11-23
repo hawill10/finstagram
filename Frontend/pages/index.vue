@@ -25,27 +25,27 @@
           dense
         />
         <div class="auth__button__container">
-          <v-btn color="primary" class="auth__button">
+          <v-btn @click="toggleLogin" color="primary" class="auth__button">
             LOGIN
           </v-btn>
-          <v-btn class="auth__button">
+          <v-btn @click="toggleModal" class="auth__button">
             REGISTER
           </v-btn>
         </div>
-        <v-alert
-          v-model="alert"
-          border="left"
-          close-text="Close Alert"
-          type="error"
-          transition="slide-y-transition"
-          dismissible
-          class="auth__alert"
-        >
-          Login Failed.
-        </v-alert>
       </div>
     </v-flex>
-    <registerModal :toggleModal="toggleModal" />
+    <v-alert
+      v-model="alert"
+      :close-text="closeAlert"
+      border="left"
+      type="error"
+      transition="slide-y-transition"
+      dismissible
+      class="auth__alert"
+    >
+      {{ error }}
+    </v-alert>
+    <registerModal @toggleModal="toggleModal" :isOpen="isOpen" />
   </v-layout>
 </template>
 
@@ -60,7 +60,28 @@ export default {
     return {
       username: '',
       password: '',
-      toggleModal: false
+      error: '',
+      alert: false,
+      isOpen: false
+    }
+  },
+  methods: {
+    toggleLogin () {
+      const { username, password } = this
+      this.$store.dispatch('login', {
+        username,
+        password
+      })
+        .catch((e) => {
+          this.alert = true
+          this.error = e
+        })
+    },
+    toggleModal () {
+      this.isOpen = !this.isOpen
+    },
+    closeAlert () {
+      this.alert = !this.alert
     }
   }
 }
