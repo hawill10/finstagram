@@ -77,7 +77,6 @@ def registerAuth():
 
     post_data = request.get_json()
 
-<<<<<<< HEAD
     print(post_data, file=sys.stdout)
 
     #grabs information from the forms
@@ -104,10 +103,6 @@ def registerAuth():
     return result
 
 @app.route('/feed')
-=======
-# show all photos the user can see
-@app.route('/feed', methods=['GET'])
->>>>>>> da35e5b5e48b691e4772824a295c2f1e0927fcd2
 def home():
     response = {}
     status = 200
