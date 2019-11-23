@@ -72,3 +72,10 @@ CREATE TABLE Follow (
     FOREIGN KEY(username_followed) REFERENCES Person(username),
     FOREIGN KEY(username_follower) REFERENCES Person(username)
 );
+
+GO
+
+CREATE VIEW SharedWithWhom AS 
+SELECT SharedWith.groupOwner, SharedWith.groupName, photoID, member_username
+FROM SharedWith JOIN BelongTo ON (SharedWith.groupOwner = BelongTo.owner_username
+                                AND SharedWith.groupName = BelongTo.groupName)
