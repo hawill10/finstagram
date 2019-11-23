@@ -223,19 +223,33 @@ def specificPhoto_view(photo_id):
 @app.route('/post', methods=['GET', 'POST'])
 def post():
     request_data = request.get_json()
+    status = 200
+    response = {}
 
     #grabs information from the forms
-    username = request_data.get('username')
-    filepath = request_data.get('password')
+    filepath = request_data.get('filepath')
+    allFollowers = request_data.get('allFollowers')
+    caption = request_data.get('caption')
+    photoImage = request_data.get('photoImage')
 
     username = session['username']
-    cursor = conn.cursor()
-    blog = request.form['blog']
-    query = 'INSERT INTO blog (blog_post, username) VALUES(%s, %s)'
-    cursor.execute(query, (blog, username))
-    conn.commit()
-    cursor.close()
-    return redirect(url_for('home'))
+
+    try:
+        # insert value into Photo
+        with conn.cursor() as cursor:
+            query = '''INSERT INTO Photo (postingdate, filepath, allFollowers, caption, photoPoster, photoImage)
+                        VALUES (NOW(), %s, %d, %s, %s, %s)'''
+            cursor.execute(query, (filepath, allFollowers, caption, username, photoImage))
+            cursor.commit()
+    except Exception as error:
+            errorMsg = error.args
+            response["errMsg"] = errorMsg
+            status = 400
+    
+    result = jsonify(response)
+    result.status_code = status
+    return result
+
 
 # @app.route('/select_blogger')
 # def select_blogger():
