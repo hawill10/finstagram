@@ -8,23 +8,46 @@
         <v-container>
           <v-row>
             <v-col cols="12">
-              <v-text-field label="Username*" outlined required />
-            </v-col>
-            <v-col cols="12" sm="6">
-              <v-text-field label="First Name*" outlined required />
+              <v-text-field
+                v-model="username"
+                label="Username*"
+                outlined
+                required
+              />
             </v-col>
             <v-col cols="12" sm="6">
               <v-text-field
+                v-model="fname"
+                label="First Name*"
+                outlined
+                required
+              />
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="lname"
                 label="Last Name*"
                 outlined
                 required
               />
             </v-col>
             <v-col cols="12">
-              <v-text-field label="Password*" outlined type="password" required />
+              <v-text-field
+                v-model="password"
+                label="Password*"
+                outlined
+                type="password"
+                required
+              />
             </v-col>
             <v-col cols="12">
-              <v-textarea label="Bio" outlined no-resize counter="1000" />
+              <v-textarea
+                v-model="bio"
+                label="Bio"
+                outlined
+                no-resize
+                counter="1000"
+              />
             </v-col>
           </v-row>
         </v-container>
@@ -48,8 +71,32 @@ export default {
   props: {
     isOpen: Boolean
   },
+  data () {
+    return {
+      errMsg: '',
+      username: '',
+      password: '',
+      fname: '',
+      lname: '',
+      bio: ''
+    }
+  },
   methods: {
-    submitForm () {},
+    submitForm () {
+      const { username, password, fname, lname, bio } = this
+      console.log(username, password, fname, lname, bio)
+
+      this.$store.dispatch('register', {
+        username,
+        password,
+        fname,
+        lname,
+        bio
+      })
+        .catch((e) => {
+          this.errMsg = e
+        })
+    },
     closeModal () {
       this.$emit('toggleModal')
     }
