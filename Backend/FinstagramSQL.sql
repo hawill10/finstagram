@@ -76,6 +76,6 @@ CREATE TABLE Follow (
 GO
 
 CREATE VIEW SharedWithWhom AS 
-SELECT *
+SELECT SharedWith.groupOwner, SharedWith.groupName, photoID, member_username
 FROM SharedWith JOIN BelongTo ON (SharedWith.groupOwner = BelongTo.owner_username
                                 AND SharedWith.groupName = BelongTo.groupName)

@@ -94,16 +94,18 @@ def registerAuth():
         cursor.close()
         return render_template('index.html')
 
-
+# show all photos the user can see
 @app.route('/feed', methods=['GET'])
 def home():
     response = {}
     status = 200
 
     user = session['username']
+    # if user logged in
     if (user):
         try:
             with conn.cursor() as cursor:
+                # find all photos that can be viewed by the user
                 query = """SELECT photoImage, photoPoster, caption, postingdate
                         FROM Photo AS P
                         WHERE (allFollowers = True AND photoPoster IN (SELECT username_followed
@@ -113,11 +115,10 @@ def home():
                                                                             followstatus = True))
                             OR
                             photoID IN (SELECT photoID
-                                        FROM SharedWith JOIN BelongTo ON (SharedWith.groupOwner = BelongTo.owner_username
-                                                                            AND SharedWith.groupName = BelongTo.groupName)
+                                        FROM SharedWithWhom
                                         WHERE member_username = %s AND owner_username = P.photoPoster AND photoID = P.photoID
                                         )
-                        ORDER BY postingdate DESC"""
+                        ORDER BY photoID DESC"""
                 cursor.execute(query, (user, user))
                 data = cursor.fetchall()
                 response['data'] = data
@@ -134,14 +135,82 @@ def home():
     result.status_code = status
     return result
 
+# show photo details
 @app.route('/feed/<photo_id>')
 def specificPhoto_view(photo_id):
+    response = {}
     status = 200
+    user = session['username']
     if (user):
+        # Check if the user has the permission to view the photo
+        # Figure out who posted the photo
+        try:
+            poster = None
+            permitted = 0
+            with conn.cursor() as cursor:
+                query = '''SELECT photoPoster
+                            FROM Photo
+                            WHERE photoID = %d'''
+                cursor.execute(query, (photo_id))
+                data = cursor.fetchone()
+                poster= data
+            # check if the user has permission to access the photo
+
+                query = '''SELECT count(*)
+                            FROM Photo
+                            WHERE photoID = %d AND (EXISTS (SELECT *
+                                                            FROM SharedWithWhom
+                                                            WHERE groupOwner = %s AND
+                                                            photo_id = %d AND
+                                                            member_username = %s)
+                                                    OR
+                                                    (allFollowers = True AND EXISTS(SELECT *
+                                                                                    FROM Follow
+                                                                                    WHERE username_followed = %s AND
+                                                                                    username_follower = %s AND
+                                                                                    followStatus = True))'''
+                cursor.execute(query, (photo_id, poster, photo_id, user, poster, user))
+                data = cursor.fetchone()
+                permitted = data
+                # if the user has permissio to access the photo, get info
+                if (permitted):
+                    # get photo data
+                    query = '''SELECT photoImage, photoPoster, firstName, lastName, caption, postingdate
+                                FROM Photo JOIN Person ON (photoPoster=username)
+                                WHERE photoID = %d'''
+                    cursor.execute(query, (photo_id))
+                    data = cursor.fetchone()
+                    response["data"] = data
+                    # get tagged person
+                    query = '''SELECT firstName, lastName, username
+                                FROM Tagged NATURAL JOIN Person
+                                WHERE photoID = %d AND tagstatus = True'''
+                    cursor.execute(query, (photo_id))
+                    tagged = cursor.fetchall()
+                    response["tagged"] = tagged
+
+                    query = '''SELECT username, rating
+                                FROM Likes
+                                WHERE photoID = %d'''
+                    cursor.execute(query, (photo_id))
+                    rating = cursor.fetchall()
+                    response["rating"] = rating
+
+
+
+        except Exception as error:
+            errorMsg = error.args
+            response["errMsg"] = errorMsg
+            status = 400
+        
 
     else:
-        response["status"] = 0
         response["errMsg"] = "You have to login"
+        status = 401
+    
+    result = jsonify(response)
+    result.status_code = status
+    return result
 
         
 # @app.route('/post', methods=['GET', 'POST'])
@@ -189,4 +258,3 @@ app.secret_key = 'some key that you will never guess'
 #for changes to go through, TURN OFF FOR PRODUCTION
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug = True)
-    home()
