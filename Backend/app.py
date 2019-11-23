@@ -97,7 +97,9 @@ def registerAuth():
 
 @app.route('/feed', methods=['GET'])
 def home():
-    response = {"status" : 1}
+    response = {}
+    status = 200
+
     user = session['username']
     if (user):
         try:
@@ -121,22 +123,25 @@ def home():
                 response['data'] = data
         except Exception as error:
             errorMsg = error.args
-            response["status"] = 0
-            response["errorMsg"] = errorMsg
+            response["errMsg"] = errorMsg
+            status = 400
 
     else:
-        response["status"] = 0
-        response["errorMsg"] = "You have to login"
+        response["errMsg"] = "You have to login"
+        status = 401
     
-    return jsonify(response)
+    result = jsonify(response)
+    result.status_code = status
+    return result
 
 @app.route('/feed/<photo_id>')
 def specificPhoto_view(photo_id):
+    status = 200
     if (user):
 
     else:
         response["status"] = 0
-        response["errorMsg"] = "You have to login"
+        response["errMsg"] = "You have to login"
 
         
 # @app.route('/post', methods=['GET', 'POST'])
