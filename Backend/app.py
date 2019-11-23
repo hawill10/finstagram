@@ -84,7 +84,7 @@ def registerAuth():
         return render_template('index.html')
 
 
-@app.route('/feed')
+@app.route('/feed', methods=['GET'])
 def home():
     response = {"status" : 1}
     user = session['username']
@@ -108,21 +108,24 @@ def home():
                 cursor.execute(query, (user, user))
                 data = cursor.fetchall()
                 response['data'] = data
-                return jsonify(response)
         except Exception as error:
-            print(error)
+            errorMsg = error.args
+            response["status"] = 0
+            response["errorMsg"] = errorMsg
 
     else:
         response["status"] = 0
         response["errorMsg"] = "You have to login"
-        return jsonify(response)
     
-
     return jsonify(response)
 
 @app.route('/feed/<photo_id>')
 def specificPhoto_view(photo_id):
-    user 
+    if (user):
+
+    else:
+        response["status"] = 0
+        response["errorMsg"] = "You have to login"
 
         
 # @app.route('/post', methods=['GET', 'POST'])
@@ -170,3 +173,4 @@ app.secret_key = 'some key that you will never guess'
 #for changes to go through, TURN OFF FOR PRODUCTION
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug = True)
+    home()
