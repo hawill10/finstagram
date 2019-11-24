@@ -233,18 +233,21 @@ def post():
     photoImage = request_data.get('photoImage')
 
     username = session['username']
-
-    try:
-        # insert value into Photo
-        with conn.cursor() as cursor:
-            query = '''INSERT INTO Photo (postingdate, filepath, allFollowers, caption, photoPoster, photoImage)
-                        VALUES (NOW(), %s, %d, %s, %s, %s)'''
-            cursor.execute(query, (filepath, allFollowers, caption, username, photoImage))
-            cursor.commit()
-    except Exception as error:
-            errorMsg = error.args
-            response["errMsg"] = errorMsg
-            status = 400
+    if (username):
+        try:
+            # insert value into Photo
+            with conn.cursor() as cursor:
+                query = '''INSERT INTO Photo (postingdate, filepath, allFollowers, caption, photoPoster, photoImage)
+                            VALUES (NOW(), %s, %d, %s, %s, %s)'''
+                cursor.execute(query, (filepath, allFollowers, caption, username, photoImage))
+                cursor.commit()
+        except Exception as error:
+                errorMsg = error.args
+                response["errMsg"] = errorMsg
+                status = 400
+    else:
+        response["errMsg"] = "You have to login"
+        status = 401
     
     result = jsonify(response)
     result.status_code = status
