@@ -17,3 +17,15 @@
     </v-flex>
   </v-layout>
 </template>
+
+<script>
+export default {
+  name: 'Feed',
+  async fetch ({ store }) {
+    await store.dispatch('getFeeds')
+  },
+  data () {
+    return {}
+  }
+}
+</script>

@@ -8,6 +8,19 @@
         <v-container>
           <v-row>
             <v-col cols="12">
+              <v-alert
+                v-model="alert"
+                :close-text="toggleAlert"
+                border="left"
+                type="error"
+                transition="slide-y-transition"
+                dismissible
+                class="register__alert"
+              >
+                {{ errMsg }}
+              </v-alert>
+            </v-col>
+            <v-col cols="12">
               <v-text-field
                 v-model="username"
                 label="Username*"
@@ -73,6 +86,7 @@ export default {
   },
   data () {
     return {
+      alert: false,
       errMsg: '',
       username: '',
       password: '',
@@ -84,7 +98,6 @@ export default {
   methods: {
     submitForm () {
       const { username, password, fname, lname, bio } = this
-      console.log(username, password, fname, lname, bio)
 
       this.$store.dispatch('register', {
         username,
@@ -93,16 +106,28 @@ export default {
         lname,
         bio
       })
+        .then(() => {
+          this.username = ''
+          this.password = ''
+          this.fname = ''
+          this.lname = ''
+          this.bio = ''
+          this.closeModal()
+        })
         .catch((e) => {
           this.errMsg = e
+          this.toggleAlert()
         })
     },
     closeModal () {
       this.$emit('toggleModal')
+    },
+    toggleAlert () {
+      this.alert = !this.alert
     }
   }
 }
 </script>
 
-<style>
+<style lang="scss">
 </style>

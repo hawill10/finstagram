@@ -72,6 +72,7 @@ export default {
         username,
         password
       })
+        .then(() => this.$router.push('/feed'))
         .catch((e) => {
           this.alert = true
           this.error = e

@@ -1,5 +1,6 @@
 export const state = () => ({
-  user: null
+  username: null,
+  token: null
 })
 
 export const getters = {
@@ -7,7 +8,10 @@ export const getters = {
 
 export const mutations = {
   SET_USER (state, payload) {
-    state.user = payload
+    state.username = payload
+  },
+  SET_TOKEN (state, payload) {
+    state.token = payload
   }
 }
 
@@ -18,26 +22,36 @@ export const actions = {
         username,
         password
       })
-      commit('SET_USER', {
-        ...data
-      })
+      commit('SET_USER', data.username)
+      commit('SET_TOKEN', data.token)
+      this.$axios.setToken(data.token, 'Bearer')
     } catch (e) {
       throw e.response.data.errMsg
     }
   },
+  async logout ({ commit }) {
+    await this.$axios.post('logout')
+    commit('SET_USER', null)
+    commit('SET_TOKEN', null)
+    this.$axios.setToken('', 'Bearer')
+  },
   async register ({ commit }, { username, password, fname, lname, bio }) {
     try {
-      const { data } = await this.$axios.post('register', {
+      await this.$axios.post('register', {
         username,
         password,
         fname,
         lname,
         bio
       })
-      console.log(data.response)
-      if (data.response) {
-        this.$router.push('/')
-      }
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  async getFeeds ({ commit }) {
+    try {
+      const response = await this.$axios.get('feed')
+      console.log(response)
     } catch (e) {
       throw e.response.data.errMsg
     }

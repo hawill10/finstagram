@@ -1,5 +1,6 @@
 #Import Flask Library
 from flask import Flask, render_template, request, session, url_for, redirect, jsonify
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from flask_cors import CORS
 import pymysql.cursors
 import os
@@ -13,6 +14,8 @@ SALT = 'cs3083'
 
 #Initialize the app from Flask
 app = Flask(__name__)
+jwt = JWTManager(app)
+app.config["JWT_SECRET_KEY"] = "some-random-secret-key"
 
 #Enable CORS
 CORS(app)
@@ -32,11 +35,9 @@ def index():
     return render_template('index.html')
 
 #Authenticates the login
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['POST'])
 def loginAuth():
     response = {}
-    status = 200
-
     request_data = request.get_json()
 
     #grabs information from the forms
@@ -53,21 +54,15 @@ def loginAuth():
     data = cursor.fetchone()
     #use fetchall() if you are expecting more than 1 data row
     cursor.close()
-    errorMsg = None
-    if(data):
-        #creates a session for the the user
-        #session is a built in
-        session['username'] = username
+    if (data):
+        access_token = create_access_token(identity=username)
         response['username'] = username
+        response['token'] = access_token
+        return jsonify(response), 200
     else:
         #returns an error message to the html page
-        errorMsg = 'Invalid username or password'
-        status = 401
-        response['errMsg'] = errorMsg
-
-    result = jsonify(response)
-    result.status_code = status
-    return result
+        response['errMsg'] = 'Invalid username or password'
+        return jsonify(response), 401
 
 #Authenticates the register
 @app.route('/register', methods=['POST'])
@@ -76,8 +71,6 @@ def registerAuth():
     status = 201
 
     post_data = request.get_json()
-
-    print(post_data, file=sys.stdout)
 
     #grabs information from the forms
     username = post_data.get('username')
@@ -102,12 +95,14 @@ def registerAuth():
     result.status_code = status
     return result
 
-@app.route('/feed')
+@app.route('/feed', methods=['GET'])
+@jwt_required
 def home():
     response = {}
     status = 200
 
-    user = session['username']
+    user = get_jwt_identity()
+
     # if user logged in
     if (user):
         try:
@@ -143,12 +138,16 @@ def home():
     return result
 
 # show photo details
-@app.route('/feed/<photo_id>')
+@app.route('/feed/<photo_id>', methods=['GET'])
 def specificPhoto_view(photo_id):
     response = {}
     status = 200
+
+    request_data = request.get_json();
+    client_username = request_data.get('username')
+
     user = session['username']
-    if (user):
+    if (user and user == client_username):
         # Check if the user has the permission to view the photo
         # Figure out who posted the photo
         try:
@@ -282,7 +281,6 @@ def logout():
     session.pop('username')
     return redirect('/')
         
-app.secret_key = 'some key that you will never guess'
 #Run the app on localhost port 5000
 #debug = True -> you don't have to restart flask
 #for changes to go through, TURN OFF FOR PRODUCTION
