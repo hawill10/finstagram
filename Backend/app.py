@@ -118,7 +118,7 @@ def home():
                             OR
                             photoID IN (SELECT photoID
                                         FROM SharedWithWhom
-                                        WHERE member_username = %s AND owner_username = P.photoPoster AND photoID = P.photoID
+                                        WHERE member_username = %s AND groupOwner = P.photoPoster AND photoID = P.photoID
                                         )
                         ORDER BY photoID DESC"""
                 cursor.execute(query, (user, user))
