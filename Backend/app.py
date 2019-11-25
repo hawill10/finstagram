@@ -7,6 +7,7 @@ import os
 import hashlib
 import datetime
 import json
+import base64
 from werkzeug.utils import secure_filename
 
 # For Logging on Console
@@ -231,7 +232,7 @@ def specificPhoto_view(photo_id):
 @app.route('/post', methods=['POST'])
 @jwt_required
 def post():
-    request_data = request.get_json()
+    # request_data = request.get_json()
     status = 200
     response = {}
 
@@ -239,9 +240,11 @@ def post():
 
     #grabs information from the forms
     # filepath = request_data.get('filepath')
-    allFollowers = request_data.get('allFollowers')
-    caption = request_data.get('caption')
-    imageUrl = request_data.get('imageUrl')
+    allFollowers = request.form['allFollowers']
+    caption = request.form['caption']
+    imageUrl = request.form['imageUrl']
+    imageExtension = request.form['imageExtension']
+    rawFile = request.form['rawFile']
 
     if (user):
         try:
@@ -252,18 +255,27 @@ def post():
                 cursor.execute(query, (allFollowers, caption, user))
                 conn.commit()
 
-                query = '''SELECT max(photoID) FROM Photo'''
+                query = '''SELECT max(photoID) AS maxID FROM Photo'''
                 cursor.execute(query)
-                maxID = cursor.fetchone()
+                maxID = cursor.fetchone()["maxID"]
             
-                filename = secure_filename(maxID)
-                imageUrl.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
+                filename = secure_filename(str(maxID) + imageExtension)
+                # try:
+                # image_64_encode = base64.encodestring(imageUrl)
+                # image_64_decode = base64.decodestring(imageUrl)
+                # except Exception as error:
+                #     print("ERROR", file=sys.stdout)
+                #     print(error, file=sys.stdout)
+                try:
+                    with open(filename, "wb") as fh:
+                        fh.write(rawFile)
+                        fh.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                except Exception as error:
+                    print("ERROR", file=sys.stdout)
+                    print(error, file=sys.stdout)
+                
                 query = '''UPDATE Photo SET filepath = %s WHERE photoID = %s'''
                 cursor.execute(query, (url_for('uploaded_file', filename=filename), maxID))
-                
-
-
                 
         except Exception as error:
                 errorMsg = error.args

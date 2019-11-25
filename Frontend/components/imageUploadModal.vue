@@ -97,10 +97,20 @@ export default {
       }
     },
     submitImage () {
-      const { imageUrl, caption } = this
+      const { imageUrl, caption, file } = this
       const allFollowers = this.isAllFollowers ? 1 : 0
 
-      this.$store.dispatch('uploadPhoto', { imageUrl, caption, allFollowers })
+      const imageExtension = `.${imageUrl.split(',')[0].split(':')[1].split(';')[0].split('/')[1]}`
+      const baseImageUrl = imageUrl.split(',')[1]
+
+      const formData = new FormData()
+      formData.append('imageUrl', baseImageUrl)
+      formData.append('imageExtension', imageExtension)
+      formData.append('rawFile', file)
+      formData.append('caption', caption)
+      formData.append('allFollowers', allFollowers)
+
+      this.$store.dispatch('uploadPhoto', formData)
         .then(() => this.toggleModal)
         .catch((e) => {
           this.errMsg = e
