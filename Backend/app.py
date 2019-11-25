@@ -243,23 +243,33 @@ def post():
     user = get_jwt_identity()
 
     #grabs information from the forms
-    filepath = request_data.get('filepath')
+    # filepath = request_data.get('filepath')
     allFollowers = request_data.get('allFollowers')
     caption = request_data.get('caption')
     imageUrl = request_data.get('imageUrl')
-
-    filename = secure_filename(filepath)
-    imageUrl.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
     if (user):
         try:
             # insert value into Photo
             with conn.cursor() as cursor:
-                query = '''INSERT INTO Photo (postingdate, allFollowers, caption, photoPoster, filepath)
-                            VALUES (NOW(), %s, %s, %s, %s)'''
-                cursor.execute(query, (allFollowers, caption, user, url_for('uploaded_file',
-                                    filename=filename)))
+                query = '''INSERT INTO Photo (postingdate, allFollowers, caption, photoPoster)
+                            VALUES (NOW(), %s, %s, %s)'''
+                cursor.execute(query, (allFollowers, caption, user))
                 conn.commit()
+
+                query = '''SELECT max(photoID) FROM Photo'''
+                cursor.execute(query)
+                maxID = cursor.fetchone()
+            
+                filename = secure_filename(maxID)
+                imageUrl.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+                query = '''UPDATE Photo SET filepath = %s WHERE photoID = %s'''
+                cursor.execute(query, (url_for('uploaded_file', filename=filename), maxID))
+                
+
+
+                
         except Exception as error:
                 errorMsg = error.args
                 response["errMsg"] = errorMsg
