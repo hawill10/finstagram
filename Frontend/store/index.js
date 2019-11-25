@@ -2,12 +2,16 @@ export const state = () => ({
   username: null,
   token: null,
   feeds: [],
+  feed: {},
   isPhotoModalOpen: false
 })
 
 export const getters = {
   getFeeds (state) {
     return state.feeds
+  },
+  getFeed (state) {
+    return state.feed
   }
 }
 
@@ -21,6 +25,12 @@ export const mutations = {
   },
   TOGGLE_PHOTO_MODAL (state) {
     state.isPhotoModalOpen = !state.isPhotoModalOpen
+  },
+  SET_FEEDS (state, payload) {
+    state.feeds = payload
+  },
+  SET_FEED (state, payload) {
+    state.feed = payload
   }
 }
 
@@ -58,8 +68,16 @@ export const actions = {
   },
   async getFeeds ({ commit }) {
     try {
-      const response = await this.$axios.get('feed')
-      console.log(response)
+      const { data } = await this.$axios.get('feed')
+      commit('SET_FEEDS', data.data)
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  async getFeed ({ commit, state }, id) {
+    try {
+      const { data } = await this.$axios.get(`feed/${id}`)
+      commit('SET_FEED', data.data)
     } catch (e) {
       throw e.response.data.errMsg
     }

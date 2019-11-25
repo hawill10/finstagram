@@ -4,3 +4,4 @@ lib
 .Python
 .vscode
 __pycache__
+uploads/

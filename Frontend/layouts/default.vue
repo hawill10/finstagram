@@ -8,6 +8,7 @@
     >
       <v-toolbar-title v-text="title" depressed class="toolbar__title" />
       <v-spacer />
+      <small>{{ this.$store.state.username }}</small>
       <v-btn depressed class="toolbar__button">
         Manage Profile
       </v-btn>

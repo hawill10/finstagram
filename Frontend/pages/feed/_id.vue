@@ -4,24 +4,24 @@
       <v-col md="6">
         <v-card class="feedDetails__card">
           <v-img
-            src="https://cdn.vuetifyjs.com/images/cards/mountain.jpg"
-            min-height="450px"
+            :src="`http://localhost:5000${feed.filepath}`"
+            max-height="450px"
           />
 
           <v-list-item>
             <v-list-item-content>
               <v-list-item-title class="headline">
-                Photo Poster
+                {{ `${feed.photoPoster} - ${feed.firstName}, ${feed.lastName}` }}
               </v-list-item-title>
               <v-list-item-subtitle>
-                Photo ID: 1
+                Photo ID: {{ feed.photoID }}
               </v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
 
           <v-card-text>
-            <p>This is caption</p>
-            <small>TIMESTAMP</small>
+            <p>{{ feed.caption }}</p>
+            <small>{{ feed.timestamp }}</small>
           </v-card-text>
         </v-card>
       </v-col>
@@ -38,7 +38,7 @@
             <v-list-item>
               <v-list-item-content>
                 <v-list-item-title>
-                  First Name, Last Name
+                  First Name, Last Name (Username)
                 </v-list-item-title>
               </v-list-item-content>
             </v-list-item>
@@ -80,9 +80,12 @@ export default {
     }
   },
   computed: {
-    selectedPhotoId () {
-      return this.$route.params.id
+    feed () {
+      return this.$store.getters.getFeed
     }
+  },
+  async fetch ({ store, app }) {
+    await store.dispatch('getFeed', app.context.route.params.id)
   }
   // async asyncData ({ params, $axios }) {
   //   const { data } = await $axios.get(`https://my-api/posts/${params.id}`)

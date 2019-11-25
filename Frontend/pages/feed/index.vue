@@ -2,26 +2,26 @@
   <v-layout justify-center>
     <v-row>
       <v-col md="6" offset-md="3">
-        <v-card>
+        <v-card v-for="feed in feeds" @click="navigateTo(feed.photoID)" :key="feed.index" class="feed__card">
           <v-img
-            src="https://cdn.vuetifyjs.com/images/cards/mountain.jpg"
-            min-height="450px"
+            :src="`http://localhost:5000${feed.filepath}`"
+            max-height="450px"
           />
 
           <v-list-item>
             <v-list-item-content>
               <v-list-item-title class="headline">
-                Photo Poster
+                {{ feed.photoPoster }}
               </v-list-item-title>
               <v-list-item-subtitle>
-                Photo ID: 1
+                Photo ID: {{ feed.photoID }}
               </v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
 
           <v-card-text>
-            <p>This is caption</p>
-            <small>TIMESTAMP</small>
+            <p>{{ feed.caption }}</p>
+            <small>{{ feed.postingdate }}</small>
           </v-card-text>
         </v-card>
       </v-col>
@@ -37,22 +37,30 @@ export default {
   components: {
     imageUploadModalVue
   },
-  data () {
-    return {}
+  computed: {
+    feeds () {
+      return this.$store.getters.getFeeds
+    }
   },
-  // async fetch ({ store }) {
-  //   await store.dispatch('getFeeds')
-  // },
+  async fetch ({ store }) {
+    await store.dispatch('getFeeds')
+  },
   middleware ({ store, redirect }) {
     // If the user is not authenticated
     if (!store.state.username && !store.state.token) {
       redirect('/')
     }
   },
-  computed: {
-    feeds () {
-      return this.$store.getters.getFeeds()
+  methods: {
+    navigateTo (id) {
+      this.$router.push(`/feed/${id}`)
     }
   }
 }
 </script>
+
+<style lang="scss">
+.feed__card + .feed__card {
+  margin-top: 20px;
+}
+</style>

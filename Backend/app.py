@@ -15,14 +15,14 @@ import sys
 
 SALT = 'cs3083'
 
-UPLOAD_FOLDER = '/uploads'
+UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 #Initialize the app from Flask
 app = Flask(__name__)
 jwt = JWTManager(app)
 app.config["JWT_SECRET_KEY"] = "some-random-secret-key"
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 #Enable CORS
 CORS(app)
@@ -115,7 +115,7 @@ def home():
         try:
             with conn.cursor() as cursor:
                 # find all photos that can be viewed by the user
-                query = """SELECT filepath, photoPoster, caption, postingdate
+                query = """SELECT photoID, filepath, photoPoster, caption, postingdate
                         FROM Photo AS P
                         WHERE (allFollowers = True AND photoPoster IN (SELECT username_followed
                                                                         FROM Follow
@@ -149,13 +149,13 @@ def home():
 
 # show photo details
 @app.route('/feed/<photo_id>', methods=['GET'])
+@jwt_required
 def specificPhoto_view(photo_id):
     response = {}
     status = 200
 
-    request_data = request.get_json()
     user = get_jwt_identity()
-
+    print(user, file=sys.stdout)
 
     if (user):
         # Check if the user has the permission to view the photo
@@ -166,53 +166,51 @@ def specificPhoto_view(photo_id):
             with conn.cursor() as cursor:
                 query = '''SELECT photoPoster
                             FROM Photo
-                            WHERE photoID = %d'''
+                            WHERE photoID = %s'''
                 cursor.execute(query, (photo_id))
                 data = cursor.fetchone()
-                poster= data
+                poster = data['photoPoster']
             # check if the user has permission to access the photo
 
-                query = '''SELECT count(*)
+                query = '''SELECT count(*) AS cnt
                             FROM Photo
-                            WHERE photoID = %d AND (EXISTS (SELECT *
+                            WHERE photoID = %s AND (EXISTS (SELECT *
                                                             FROM SharedWithWhom
                                                             WHERE groupOwner = %s AND
-                                                            photo_id = %d AND
+                                                            photoID = %s AND
                                                             member_username = %s)
                                                     OR
                                                     (allFollowers = True AND EXISTS(SELECT *
                                                                                     FROM Follow
                                                                                     WHERE username_followed = %s AND
                                                                                     username_follower = %s AND
-                                                                                    followStatus = True))'''
+                                                                                    followStatus = True)))'''
                 cursor.execute(query, (photo_id, poster, photo_id, user, poster, user))
                 data = cursor.fetchone()
-                permitted = data
+                permitted = data['cnt']
                 # if the user has permissio to access the photo, get info
                 if (permitted):
                     # get photo data
-                    query = '''SELECT photoImage, photoPoster, firstName, lastName, caption, postingdate
+                    query = '''SELECT photoPoster, firstName, lastName, caption, postingdate, filepath
                                 FROM Photo JOIN Person ON (photoPoster=username)
-                                WHERE photoID = %d'''
+                                WHERE photoID = %s'''
                     cursor.execute(query, (photo_id))
                     data = cursor.fetchone()
                     response["data"] = data
                     # get tagged person
                     query = '''SELECT firstName, lastName, username
                                 FROM Tagged NATURAL JOIN Person
-                                WHERE photoID = %d AND tagstatus = True'''
+                                WHERE photoID = %s AND tagstatus = True'''
                     cursor.execute(query, (photo_id))
                     tagged = cursor.fetchall()
                     response["tagged"] = tagged
 
                     query = '''SELECT username, rating
                                 FROM Likes
-                                WHERE photoID = %d'''
+                                WHERE photoID = %s'''
                     cursor.execute(query, (photo_id))
                     rating = cursor.fetchall()
                     response["rating"] = rating
-
-
 
         except Exception as error:
             errorMsg = error.args
@@ -232,7 +230,6 @@ def specificPhoto_view(photo_id):
 @app.route('/post', methods=['POST'])
 @jwt_required
 def post():
-    # request_data = request.get_json()
     status = 200
     response = {}
 
@@ -240,11 +237,14 @@ def post():
 
     #grabs information from the forms
     # filepath = request_data.get('filepath')
-    allFollowers = request.form['allFollowers']
-    caption = request.form['caption']
-    imageUrl = request.form['imageUrl']
-    imageExtension = request.form['imageExtension']
-    rawFile = request.form['rawFile']
+    try:
+        imageUrl = request.form['imageUrl']
+        imageExtension = request.form['imageExtension']
+        allFollowers = request.form['allFollowers']
+        caption = request.form['caption']
+    except Exception as error:
+        print("ERROR", file=sys.stdout)
+        print(error, file=sys.stdout)
 
     if (user):
         try:
@@ -257,25 +257,18 @@ def post():
 
                 query = '''SELECT max(photoID) AS maxID FROM Photo'''
                 cursor.execute(query)
+
                 maxID = cursor.fetchone()["maxID"]
-            
                 filename = secure_filename(str(maxID) + imageExtension)
-                # try:
-                # image_64_encode = base64.encodestring(imageUrl)
-                # image_64_decode = base64.decodestring(imageUrl)
-                # except Exception as error:
-                #     print("ERROR", file=sys.stdout)
-                #     print(error, file=sys.stdout)
-                try:
-                    with open(filename, "wb") as fh:
-                        fh.write(rawFile)
-                        fh.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                except Exception as error:
-                    print("ERROR", file=sys.stdout)
-                    print(error, file=sys.stdout)
+                fpath = os.path.join(UPLOAD_FOLDER, filename)
+
+                with open(fpath, "wb") as fh:
+                    fh.write(base64.decodebytes(imageUrl.encode()))
                 
                 query = '''UPDATE Photo SET filepath = %s WHERE photoID = %s'''
-                cursor.execute(query, (url_for('uploaded_file', filename=filename), maxID))
+                url = url_for('uploaded_file', filename=filename)
+                cursor.execute(query, (url, maxID))
+                conn.commit()
                 
         except Exception as error:
                 errorMsg = error.args
@@ -291,32 +284,7 @@ def post():
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'],
-                               filename)
-
-
-# @app.route('/select_blogger')
-# def select_blogger():
-#     #check that user is logged in
-#     #username = session['username']
-#     #should throw exception if username not found
-    
-#     cursor = conn.cursor()
-#     query = 'SELECT DISTINCT username FROM blog'
-#     cursor.execute(query)
-#     data = cursor.fetchall()
-#     cursor.close()
-#     return render_template('select_blogger.html', user_list=data)
-
-# @app.route('/show_posts', methods=["GET", "POST"])
-# def show_posts():
-#     poster = request.args['poster']
-#     cursor = conn.cursor()
-#     query = 'SELECT ts, blog_post FROM blog WHERE username = %s ORDER BY ts DESC'
-#     cursor.execute(query, poster)
-#     data = cursor.fetchall()
-#     cursor.close()
-#     return render_template('show_posts.html', poster_name=poster, posts=data)
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 @app.route('/logout', methods=["POST"])
 def logout():

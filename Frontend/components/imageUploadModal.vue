@@ -111,7 +111,13 @@ export default {
       formData.append('allFollowers', allFollowers)
 
       this.$store.dispatch('uploadPhoto', formData)
-        .then(() => this.toggleModal)
+        .then(() => {
+          this.file = null
+          this.imageUrl = ''
+          this.caption = ''
+          this.isAllFollowers = false
+          this.toggleModal()
+        })
         .catch((e) => {
           this.errMsg = e
         })
