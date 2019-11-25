@@ -1,9 +1,14 @@
 export const state = () => ({
   username: null,
-  token: null
+  token: null,
+  feeds: [],
+  isPhotoModalOpen: false
 })
 
 export const getters = {
+  getFeeds (state) {
+    return state.feeds
+  }
 }
 
 export const mutations = {
@@ -13,6 +18,9 @@ export const mutations = {
   SET_TOKEN (state, payload) {
     state.token = payload
     this.$axios.setToken(payload, 'Bearer')
+  },
+  TOGGLE_PHOTO_MODAL (state) {
+    state.isPhotoModalOpen = !state.isPhotoModalOpen
   }
 }
 
@@ -25,8 +33,6 @@ export const actions = {
       })
       commit('SET_USER', data.username)
       commit('SET_TOKEN', data.token)
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('username', data.username)
     } catch (e) {
       throw e.response.data.errMsg
     }
@@ -35,8 +41,6 @@ export const actions = {
     await this.$axios.post('logout')
     commit('SET_USER', null)
     commit('SET_TOKEN', null)
-    localStorage.removeItem('token')
-    localStorage.removeItem('username')
     this.$axios.setToken('', 'Bearer')
   },
   async register ({ commit }, { username, password, fname, lname, bio }) {
@@ -56,6 +60,13 @@ export const actions = {
     try {
       const response = await this.$axios.get('feed')
       console.log(response)
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  async uploadPhoto ({ commit }, payload) {
+    try {
+      await this.$axios.post('post', payload)
     } catch (e) {
       throw e.response.data.errMsg
     }

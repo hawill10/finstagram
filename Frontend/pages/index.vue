@@ -57,10 +57,8 @@ export default {
     registerModal
   },
   middleware ({ store, redirect }) {
-    // If the user is not authenticated
-    if (localStorage.getItem('token')) {
-      store.commit('SET_TOKEN', localStorage.getItem('token'))
-      store.commit('SET_USER', localStorage.getItem('username'))
+    // If the user is authenticated
+    if (store.state.username && store.state.token) {
       redirect('/feed')
     }
   },

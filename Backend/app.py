@@ -6,6 +6,8 @@ import pymysql.cursors
 import os
 import hashlib
 import datetime
+import json
+import base64
 
 # For Logging on Console
 import sys
@@ -102,7 +104,6 @@ def home():
     status = 200
 
     user = get_jwt_identity()
-
     # if user logged in
     if (user):
         try:
@@ -120,10 +121,18 @@ def home():
                                         FROM SharedWithWhom
                                         WHERE member_username = %s AND groupOwner = P.photoPoster AND photoID = P.photoID
                                         )
+                            OR
+                            photoPoster = %s
                         ORDER BY photoID DESC"""
-                cursor.execute(query, (user, user))
-                data = cursor.fetchall()
-                response['data'] = data
+                cursor.execute(query, (user, user, user))
+                result_list = cursor.fetchall()
+                # result_dict = {}
+
+                # for i in range(len(result_list)):
+                #     result_dict[i] = result_list[i]
+                #     result_dict[i]['photoImage'] = base64.b64encode(result_dict[i]['photoImage'])
+                
+                response['data'] = result_list
         except Exception as error:
             errorMsg = error.args
             response["errMsg"] = errorMsg
@@ -144,10 +153,10 @@ def specificPhoto_view(photo_id):
     status = 200
 
     request_data = request.get_json();
-    client_username = request_data.get('username')
+    user = get_jwt_identity()
 
-    user = session['username']
-    if (user and user == client_username):
+
+    if (user):
         # Check if the user has the permission to view the photo
         # Figure out who posted the photo
         try:
@@ -219,27 +228,29 @@ def specificPhoto_view(photo_id):
     return result
 
         
-@app.route('/post', methods=['GET', 'POST'])
+@app.route('/post', methods=['POST'])
+@jwt_required
 def post():
     request_data = request.get_json()
     status = 200
     response = {}
 
+    user = get_jwt_identity()
+
     #grabs information from the forms
-    filepath = request_data.get('filepath')
+    # filepath = request_data.get('filepath')
     allFollowers = request_data.get('allFollowers')
     caption = request_data.get('caption')
-    photoImage = request_data.get('photoImage')
+    imageUrl = request_data.get('imageUrl')
 
-    username = session['username']
-    if (username):
+    if (user):
         try:
             # insert value into Photo
             with conn.cursor() as cursor:
                 query = '''INSERT INTO Photo (postingdate, filepath, allFollowers, caption, photoPoster, photoImage)
-                            VALUES (NOW(), %s, %d, %s, %s, %s)'''
-                cursor.execute(query, (filepath, allFollowers, caption, username, photoImage))
-                cursor.commit()
+                            VALUES (NOW(), %s, %s, %s, %s, %s)'''
+                cursor.execute(query, ("filepath", allFollowers, caption, user, imageUrl))
+                conn.commit()
         except Exception as error:
                 errorMsg = error.args
                 response["errMsg"] = errorMsg
@@ -276,10 +287,10 @@ def post():
 #     cursor.close()
 #     return render_template('show_posts.html', poster_name=poster, posts=data)
 
-@app.route('/logout')
+@app.route('/logout', methods=["POST"])
 def logout():
-    session.pop('username')
-    return redirect('/')
+    # session.pop('username')
+    return jsonify({ msg: 'User Logged Out!' }), 200
         
 #Run the app on localhost port 5000
 #debug = True -> you don't have to restart flask
