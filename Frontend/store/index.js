@@ -12,6 +12,7 @@ export const mutations = {
   },
   SET_TOKEN (state, payload) {
     state.token = payload
+    this.$axios.setToken(payload, 'Bearer')
   }
 }
 
@@ -24,7 +25,8 @@ export const actions = {
       })
       commit('SET_USER', data.username)
       commit('SET_TOKEN', data.token)
-      this.$axios.setToken(data.token, 'Bearer')
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('username', data.username)
     } catch (e) {
       throw e.response.data.errMsg
     }
@@ -33,6 +35,8 @@ export const actions = {
     await this.$axios.post('logout')
     commit('SET_USER', null)
     commit('SET_TOKEN', null)
+    localStorage.removeItem('token')
+    localStorage.removeItem('username')
     this.$axios.setToken('', 'Bearer')
   },
   async register ({ commit }, { username, password, fname, lname, bio }) {

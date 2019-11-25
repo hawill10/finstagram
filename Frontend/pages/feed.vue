@@ -21,11 +21,20 @@
 <script>
 export default {
   name: 'Feed',
+  data () {
+    return {}
+  },
   async fetch ({ store }) {
     await store.dispatch('getFeeds')
   },
-  data () {
-    return {}
+  middleware ({ store, redirect }) {
+    // If the user is not authenticated
+    if (!localStorage.getItem('token')) {
+      return redirect('/')
+    } else if (!store.state.username && !store.state.token) {
+      store.commit('SET_TOKEN', localStorage.getItem('token'))
+      store.commit('SET_USER', localStorage.getItem('username'))
+    }
   }
 }
 </script>
