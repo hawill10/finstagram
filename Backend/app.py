@@ -1,5 +1,5 @@
 #Import Flask Library
-from flask import Flask, render_template, request, session, url_for, redirect, jsonify
+from flask import Flask, render_template, request, session, url_for, redirect, jsonify, url_for, flash, send_from_directory
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from flask_cors import CORS
 import pymysql.cursors
@@ -7,20 +7,25 @@ import os
 import hashlib
 import datetime
 import json
-import base64
+from werkzeug.utils import secure_filename
 
 # For Logging on Console
 import sys
 
 SALT = 'cs3083'
 
+UPLOAD_FOLDER = '/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
 #Initialize the app from Flask
 app = Flask(__name__)
 jwt = JWTManager(app)
 app.config["JWT_SECRET_KEY"] = "some-random-secret-key"
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 #Enable CORS
 CORS(app)
+
 
 #Configure MySQL
 conn = pymysql.connect(host='localhost',
@@ -109,7 +114,7 @@ def home():
         try:
             with conn.cursor() as cursor:
                 # find all photos that can be viewed by the user
-                query = """SELECT photoImage, photoPoster, caption, postingdate
+                query = """SELECT filepath, photoPoster, caption, postingdate
                         FROM Photo AS P
                         WHERE (allFollowers = True AND photoPoster IN (SELECT username_followed
                                                                         FROM Follow
@@ -152,7 +157,7 @@ def specificPhoto_view(photo_id):
     response = {}
     status = 200
 
-    request_data = request.get_json();
+    request_data = request.get_json()
     user = get_jwt_identity()
 
 
@@ -238,18 +243,22 @@ def post():
     user = get_jwt_identity()
 
     #grabs information from the forms
-    # filepath = request_data.get('filepath')
+    filepath = request_data.get('filepath')
     allFollowers = request_data.get('allFollowers')
     caption = request_data.get('caption')
     imageUrl = request_data.get('imageUrl')
+
+    filename = secure_filename(filepath)
+    imageUrl.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
     if (user):
         try:
             # insert value into Photo
             with conn.cursor() as cursor:
-                query = '''INSERT INTO Photo (postingdate, filepath, allFollowers, caption, photoPoster, photoImage)
-                            VALUES (NOW(), %s, %s, %s, %s, %s)'''
-                cursor.execute(query, ("filepath", allFollowers, caption, user, imageUrl))
+                query = '''INSERT INTO Photo (postingdate, allFollowers, caption, photoPoster, filepath)
+                            VALUES (NOW(), %s, %s, %s, %s)'''
+                cursor.execute(query, (allFollowers, caption, user, url_for('uploaded_file',
+                                    filename=filename)))
                 conn.commit()
         except Exception as error:
                 errorMsg = error.args
@@ -262,6 +271,11 @@ def post():
     result = jsonify(response)
     result.status_code = status
     return result
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'],
+                               filename)
 
 
 # @app.route('/select_blogger')
