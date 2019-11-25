@@ -3,16 +3,18 @@
     <v-app-bar
       fixed
       app
+      flat
+      class="toolbar"
     >
-      <v-toolbar-title v-text="title" />
+      <v-toolbar-title v-text="title" depressed class="toolbar__title" />
       <v-spacer />
-      <v-btn class="toolbar__button">
+      <v-btn depressed class="toolbar__button">
         Manage Profile
       </v-btn>
-      <v-btn @click="togglePhotoModal" class="toolbar__button">
+      <v-btn @click="togglePhotoModal" depressed class="toolbar__button">
         Upload Photo
       </v-btn>
-      <v-btn class="toolbar__button">
+      <v-btn depressed class="toolbar__button">
         Logout
       </v-btn>
     </v-app-bar>
@@ -42,5 +44,11 @@ export default {
 <style lang="scss">
 .toolbar__button + .toolbar__button{
   margin-left: 12px;
+}
+.toolbar__button {
+  background: white !important;
+}
+.toolbar__title {
+  font-weight: bold;
 }
 </style>

@@ -126,11 +126,6 @@ def home():
                         ORDER BY photoID DESC"""
                 cursor.execute(query, (user, user, user))
                 result_list = cursor.fetchall()
-                # result_dict = {}
-
-                # for i in range(len(result_list)):
-                #     result_dict[i] = result_list[i]
-                #     result_dict[i]['photoImage'] = base64.b64encode(result_dict[i]['photoImage'])
                 
                 response['data'] = result_list
         except Exception as error:
@@ -152,7 +147,7 @@ def specificPhoto_view(photo_id):
     response = {}
     status = 200
 
-    request_data = request.get_json();
+    request_data = request.get_json()
     user = get_jwt_identity()
 
 
