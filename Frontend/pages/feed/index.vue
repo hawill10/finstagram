@@ -1,12 +1,15 @@
 <template>
-  <v-layout justify-center>
-    <v-row>
-      <v-col md="6" offset-md="3">
+  <v-layout justify-center column>
+    <v-row no-gutters>
+      <v-col xs="12" sm="6" offset-sm="3">
         <v-card v-for="feed in feeds" @click="navigateTo(feed.photoID)" :key="feed.index" class="feed__card">
           <v-img
             :src="`http://localhost:5000${feed.filepath}`"
             max-height="450px"
+            contain
           />
+
+          <v-divider />
 
           <v-list-item>
             <v-list-item-content>
@@ -21,6 +24,7 @@
 
           <v-card-text>
             <p>{{ feed.caption }}</p>
+            <v-divider />
             <small>{{ feed.postingdate }}</small>
           </v-card-text>
         </v-card>

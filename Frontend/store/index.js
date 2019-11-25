@@ -48,7 +48,7 @@ export const actions = {
     }
   },
   async logout ({ commit }) {
-    await this.$axios.post('logout')
+    await this.$axios.delete('logout')
     commit('SET_USER', null)
     commit('SET_TOKEN', null)
     this.$axios.setToken('', 'Bearer')

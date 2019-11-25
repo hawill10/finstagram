@@ -10,18 +10,20 @@
 
           <v-list-item>
             <v-list-item-content>
-              <v-list-item-title class="headline">
-                {{ `${feed.photoPoster} - ${feed.firstName}, ${feed.lastName}` }}
+              <v-list-item-title class="headline feedDetails__title">
+                {{ feed.photoPoster }}
               </v-list-item-title>
               <v-list-item-subtitle>
-                Photo ID: {{ feed.photoID }}
+                <p>Posted By - {{ `${feed.firstName}, ${feed.lastName}` }}</p>
+                <small>Photo ID - {{ feed.photoID }}</small>
               </v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
 
           <v-card-text>
             <p>{{ feed.caption }}</p>
-            <small>{{ feed.timestamp }}</small>
+            <v-divider />
+            <small>{{ feed.postingdate }}</small>
           </v-card-text>
         </v-card>
       </v-col>
@@ -86,11 +88,13 @@ export default {
   },
   async fetch ({ store, app }) {
     await store.dispatch('getFeed', app.context.route.params.id)
+  },
+  middleware ({ store, redirect }) {
+    // If the user is not authenticated
+    if (!store.state.username && !store.state.token) {
+      redirect('/')
+    }
   }
-  // async asyncData ({ params, $axios }) {
-  //   const { data } = await $axios.get(`https://my-api/posts/${params.id}`)
-  //   return { title: data.title }
-  // }
 }
 </script>
 
@@ -98,6 +102,9 @@ export default {
 .feedDetails {
   &__card {
     min-height: 100%;
+  }
+  &__title {
+    margin-bottom: 12px !important;
   }
   &__button {
     width: 30%;

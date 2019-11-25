@@ -6,16 +6,16 @@
       flat
       class="toolbar"
     >
-      <v-toolbar-title v-text="title" depressed class="toolbar__title" />
+      <v-toolbar-title @click="navigateToHome()" v-text="title" depressed class="toolbar__title" />
       <v-spacer />
-      <small>{{ this.$store.state.username }}</small>
+      <small class="toolbar__username">{{ this.$store.state.username }}</small>
       <v-btn depressed class="toolbar__button">
         Manage Profile
       </v-btn>
       <v-btn @click="togglePhotoModal" depressed class="toolbar__button">
         Upload Photo
       </v-btn>
-      <v-btn depressed class="toolbar__button">
+      <v-btn @click="logout" depressed class="toolbar__button">
         Logout
       </v-btn>
     </v-app-bar>
@@ -37,6 +37,13 @@ export default {
   methods: {
     togglePhotoModal () {
       this.$store.commit('TOGGLE_PHOTO_MODAL')
+    },
+    logout () {
+      this.$store.dispatch('logout')
+        .then(() => this.$router.push('/'))
+    },
+    navigateToHome () {
+      this.$router.push('/feed')
     }
   }
 }
@@ -51,5 +58,9 @@ export default {
 }
 .toolbar__title {
   font-weight: bold;
+  cursor: pointer
+}
+.toolbar__username {
+  margin-right: 12px;
 }
 </style>

@@ -6,7 +6,6 @@ import pymysql.cursors
 import os
 import hashlib
 import datetime
-import json
 import base64
 from werkzeug.utils import secure_filename
 
@@ -22,7 +21,6 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 app = Flask(__name__)
 jwt = JWTManager(app)
 app.config["JWT_SECRET_KEY"] = "some-random-secret-key"
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 #Enable CORS
 CORS(app)
@@ -191,7 +189,7 @@ def specificPhoto_view(photo_id):
                 # if the user has permissio to access the photo, get info
                 if (permitted):
                     # get photo data
-                    query = '''SELECT photoPoster, firstName, lastName, caption, postingdate, filepath
+                    query = '''SELECT photoPoster, firstName, lastName, caption, postingdate, filepath, photoID
                                 FROM Photo JOIN Person ON (photoPoster=username)
                                 WHERE photoID = %s'''
                     cursor.execute(query, (photo_id))
@@ -286,10 +284,9 @@ def post():
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
-@app.route('/logout', methods=["POST"])
+@app.route('/logout', methods=["DELETE"])
 def logout():
-    # session.pop('username')
-    return jsonify({ msg: 'User Logged Out!' }), 200
+    return jsonify({ "msg": 'User Logged Out!' }), 200
         
 #Run the app on localhost port 5000
 #debug = True -> you don't have to restart flask
