@@ -30,8 +30,12 @@
       <v-col md="6">
         <v-card class="feedDetails__card">
           <v-card-actions class="feedDetails__button__container">
-            <v-btn color="primary" class="feedDetails__button">Like and Rate</v-btn>
-            <v-btn color="secondary" class="feedDetails__button">Request Tag</v-btn>
+            <v-btn color="primary" class="feedDetails__button">
+              Like and Rate
+            </v-btn>
+            <v-btn color="secondary" class="feedDetails__button">
+              Request Tag
+            </v-btn>
           </v-card-actions>
 
           <v-list subheader>

@@ -25,7 +25,6 @@ app.config["JWT_SECRET_KEY"] = "some-random-secret-key"
 #Enable CORS
 CORS(app)
 
-
 #Configure MySQL
 conn = pymysql.connect(host='localhost',
                        port = 8889,

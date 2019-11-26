@@ -116,6 +116,7 @@ export default {
           this.imageUrl = ''
           this.caption = ''
           this.isAllFollowers = false
+          this.$store.dispatch('getFeeds')
           this.toggleModal()
         })
         .catch((e) => {
