@@ -223,6 +223,42 @@ def specificPhoto_view(photo_id):
     result.status_code = status
     return result
 
+@app.route('/feed/<photo_id>/like', methods=['POST'])
+@jwt_required
+def like(photo_id):
+    status = 200
+    response = {}
+
+    user = get_jwt_identity()
+
+    post_data = request.get_json()
+
+    #grabs information from the forms
+    rating = post_data.get('rating')
+
+    if(user):
+        try:
+            with conn.cursor() as cursor:
+                likeQuery = '''
+                            INSERT INTO Likes
+                            VALUES (%s, %s, NOW(), %s)
+                            '''
+                cursor.execute(likeQuery, (user, photo_id, rating))
+                conn.commit()
+
+        except Exception as error:
+                    errorMsg = error.args
+                    response["errMsg"] = errorMsg
+                    status = 400
+                
+    else:
+        response["errMsg"] = "You have to login"
+        status = 401
+
+    result = jsonify(response)
+    result.status_code = status
+    return result
+
         
 @app.route('/post', methods=['POST'])
 @jwt_required
@@ -399,74 +435,6 @@ def addFollow(key):
     result = jsonify(response)
     result.status_code = status
     return result
-    
-@app.route('/tag_request', methods = ['GET', 'POST'])
-@jwt_required
-def tag_request():
-    response = {}
-    status = 200
-
-    user = get_jwt_identity()
-
-    if (user):
-        if request.method == 'GET':
-            # show requested tags
-            try:
-                with conn.cursor() as cursor:
-                    requestedTagQuery = '''SELECT photoID
-                                    FROM Tagged
-                                    WHERE username = %s AND acceptedTag = False
-                                    '''
-                    cursor.execute(requestedTagQuery, (user))
-                    tagRequests = cursor.fetchall()
-                    response["tag_requests"] = tagRequests
-
-            except Exception as error:
-                errorMsg = error.args
-                response["errMsg"] = errorMsg
-                status = 400
-        
-        if request.method == 'POST':
-            # user accepts or declines tag
-            post_data = request.get_json()
-
-            #grabs information from the forms
-            accept = post_data.get('accept')
-            photo_id = post_data.get('photo_id')
-
-            try:
-                with conn.cursor() as cursor:
-                    if(accept):
-                        # user accepts tag
-                        acceptTag = '''
-                                    UPDATE Tagged
-                                    SET tagstatus = True
-                                    WHERE username = %s AND photoID = %s
-                                    '''
-                        cursor.execute(acceptTag, (user, photo_id))
-                        conn.commit()
-                    else:
-                        # user declines tag
-                        declineTag = '''DELETE FROM Tagged
-                                        WHERE username = %s AND photoID = %s
-                                        '''
-                        cursor.execute(declineTag, (user, photo_id))
-                        conn.commit()
-
-            except Exception as error:
-                errorMsg = error.args
-                response["errMsg"] = errorMsg
-                status = 400
-                
-    else:
-        response["errMsg"] = "You have to login"
-        status = 401
-    
-    result = jsonify(response)
-    result.status_code = status
-    return result
-
-
 
 @app.route('/follow_request', methods=['GET', 'POST'])
 @jwt_required
@@ -620,6 +588,72 @@ def addTag(photo_id):
         response["errMsg"] = "You have to login"
         status = 401
         
+    result = jsonify(response)
+    result.status_code = status
+    return result
+
+@app.route('/tag_request', methods = ['GET', 'POST'])
+@jwt_required
+def tag_request():
+    response = {}
+    status = 200
+
+    user = get_jwt_identity()
+
+    if (user):
+        if request.method == 'GET':
+            # show requested tags
+            try:
+                with conn.cursor() as cursor:
+                    requestedTagQuery = '''SELECT photoID
+                                    FROM Tagged
+                                    WHERE username = %s AND acceptedTag = False
+                                    '''
+                    cursor.execute(requestedTagQuery, (user))
+                    tagRequests = cursor.fetchall()
+                    response["tag_requests"] = tagRequests
+
+            except Exception as error:
+                errorMsg = error.args
+                response["errMsg"] = errorMsg
+                status = 400
+        
+        if request.method == 'POST':
+            # user accepts or declines tag
+            post_data = request.get_json()
+
+            #grabs information from the forms
+            accept = post_data.get('accept')
+            photo_id = post_data.get('photo_id')
+
+            try:
+                with conn.cursor() as cursor:
+                    if(accept):
+                        # user accepts tag
+                        acceptTag = '''
+                                    UPDATE Tagged
+                                    SET tagstatus = True
+                                    WHERE username = %s AND photoID = %s
+                                    '''
+                        cursor.execute(acceptTag, (user, photo_id))
+                        conn.commit()
+                    else:
+                        # user declines tag
+                        declineTag = '''DELETE FROM Tagged
+                                        WHERE username = %s AND photoID = %s
+                                        '''
+                        cursor.execute(declineTag, (user, photo_id))
+                        conn.commit()
+
+            except Exception as error:
+                errorMsg = error.args
+                response["errMsg"] = errorMsg
+                status = 400
+                
+    else:
+        response["errMsg"] = "You have to login"
+        status = 401
+    
     result = jsonify(response)
     result.status_code = status
     return result
