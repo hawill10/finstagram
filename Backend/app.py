@@ -223,6 +223,54 @@ def specificPhoto_view(photo_id):
     result.status_code = status
     return result
 
+@app.route('/search_by_poster', methods=['GET'])
+def search_by_poster():
+    response = {}
+    status = 200
+
+    user = get_jwt_identity()
+    poster_data = request.get_json()
+    poster = poster_data.get('poster')
+
+    # if user logged in
+    if (user):
+        try:
+            with conn.cursor() as cursor:
+                # find all photos that can be viewed by the user
+                query = """SELECT photoID, filepath, photoPoster, caption, postingdate
+                        FROM Photo AS P
+                        WHERE ((allFollowers = True AND photoPoster IN (SELECT username_followed
+                                                                        FROM Follow
+                                                                        WHERE username_follower = %s AND
+                                                                            username_followed = P.photoPoster AND
+                                                                            followstatus = True))
+                            OR
+                            photoID IN (SELECT photoID
+                                        FROM SharedWithWhom
+                                        WHERE member_username = %s AND groupOwner = P.photoPoster AND photoID = P.photoID
+                                        )
+                            OR
+                            photoPoster = %s
+                            AND
+                            P.PhotoPoster = %s)
+                        ORDER BY photoID DESC"""
+                cursor.execute(query, (user, user, user, poster))
+                result_list = cursor.fetchall()
+                
+                response['data'] = result_list
+        except Exception as error:
+            errorMsg = error.args
+            response["errMsg"] = errorMsg
+            status = 400
+
+    else:
+        response["errMsg"] = "You have to login"
+        status = 401
+    
+    result = jsonify(response)
+    result.status_code = status
+    return result
+
 @app.route('/feed/<photo_id>/like', methods=['POST'])
 @jwt_required
 def like(photo_id):
@@ -329,16 +377,18 @@ def show_friendgroups():
     if(user):
         try:
             with conn.cursor() as cursor:
-                query = '''SELECT groupName, groupOwner
-                           FROM Friendgroup AS F
-                           WHERE F.groupOwner = %s'''
+                query = '''SELECT groupName, owner_username, member_username
+                           FROM BelongTo AS B
+                           WHERE B.owner_username = %s'''
                 cursor.execute(query,(user))
                 owning = cursor.fetchall()
                 response["owning"] = owning
 
-                query = '''SELECT groupName, groupOwner
-                           FROM BelongTo AS B
-                           WHERE B.member = %s'''
+                query = '''SELECT groupName, groupOwner, member_username
+                           FROM BelongTo
+                           WHERE (groupName, groupOwner) IN (SELECT groupName, groupOwner
+                                                             FROM BelongTo AS B
+                                                             WHERE B.member_username = %s)'''
                 cursor.execute(query,(user))
                 member = cursor.fetchall()
                 response["member"] = member
@@ -355,7 +405,7 @@ def show_friendgroups():
     result.status_code = status
     return result
 
-@app.route('/friendgroups/add', methods=['POST'])
+@app.route('/add_friendgroup', methods=['POST'])
 def addFriendGroup():
     response = {}
     status = 200
@@ -394,55 +444,55 @@ def addFriendGroup():
     result.status_code = status
     return result
 
-@app.route('/friendgroups/<groupname>', methods=['GET'])
+# @app.route('/friendgroups/<groupname>', methods=['GET'])
+# @jwt_required
+# def showMembers(groupname):
+#     response = {}
+#     status = 200
+
+#     user = get_jwt_identity()
+#     group_data = request.get_json()
+#     group_code = group_data.get("group_code") #whether user is the owner(1) or the member(0)
+#     owner = group_data.get("owner")
+
+#     if(user):
+#         try:
+#             with conn.cursor() as cursor:
+#                 if(group_code):
+#                     query = '''SELECT member_username
+#                                FROM BelongTo as B
+#                                WHERE B.owner_username = %s AND B.groupName = %s'''
+#                     cursor.execute(query,(user,groupname))
+#                     members = cursor.fetchall()
+#                     response["owner"] = user
+#                     response["members"] = members
+
+#                 else:
+#                     query = '''SELECT member_username
+#                                FROM BelongTo as B
+#                                WHERE B.owner_username = %s AND B.groupName = %s'''
+#                     cursor.execute(query,(owner,groupname))
+#                     members = cursor.fetchall()
+#                     response["owner"] = owner
+#                     response["members"] = members
+
+#         except Exception as error:
+#             errorMsg = error.args
+#             response["errMsg"] = errorMsg
+#             status = 400
+
+#     else:
+#         response["errMsg"] = "You have to login"
+#         status = 401
+
+#     result = jsonify(response)
+#     result.status_code = status
+#     return result
+
+
+@app.route('/addfriend', methods=['POST'])
 @jwt_required
-def showMembers(groupname):
-    response = {}
-    status = 200
-
-    user = get_jwt_identity()
-    group_data = request.get_json()
-    group_code = group_data.get("group_code") #whether user is the owner(1) or the member(0)
-    owner = group_data.get("owner")
-
-    if(user):
-        try:
-            with conn.cursor() as cursor:
-                if(group_code):
-                    query = '''SELECT member_username
-                               FROM BelongTo as B
-                               WHERE B.owner_username = %s AND B.groupName = %s'''
-                    cursor.execute(query,(user,groupname))
-                    members = cursor.fetchall()
-                    response["owner"] = user
-                    response["members"] = members
-
-                else:
-                    query = '''SELECT member_username
-                               FROM BelongTo as B
-                               WHERE B.owner_username = %s AND B.groupName = %s'''
-                    cursor.execute(query,(owner,groupname))
-                    members = cursor.fetchall()
-                    response["owner"] = owner
-                    response["members"] = members
-
-        except Exception as error:
-            errorMsg = error.args
-            response["errMsg"] = errorMsg
-            status = 400
-
-    else:
-        response["errMsg"] = "You have to login"
-        status = 401
-
-    result = jsonify(response)
-    result.status_code = status
-    return result
-
-
-@app.route('/friendgroups/<groupName>/addfriend', methods=['POST'])
-@jwt_required
-def addFriend(groupName):
+def addFriend():
     response = {}
     status = 200
 
@@ -450,6 +500,7 @@ def addFriend(groupName):
     friend_data = request.get_json()
 
     friendname = friend_data.get('memberName')
+    groupname = friend_data.get('groupName')
 
     if(user):
         try:
@@ -466,7 +517,7 @@ def addFriend(groupName):
                     status = 400
                 else:
                     query = "INSERT INTO BelongTo(member_username, owner_username, groupName) VALUES(%s, %s, %s)"
-                    cursor.execute(query, (friendname, user, groupName))
+                    cursor.execute(query, (friendname, user, groupname))
                     conn.commit()
         except pymysql.err.IntegrityError:
             response['errMsg'] = "%s is already taken." % (friendname)  
