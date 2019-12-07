@@ -318,6 +318,10 @@ def addFreindGroup():
     else:
         response["errMsg"] = "You have to login"
         status = 401
+        
+    result = jsonify(response)
+    result.status_code = status
+    return result
 
 
 
