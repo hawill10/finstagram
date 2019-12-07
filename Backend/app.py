@@ -321,7 +321,7 @@ def uploaded_file(filename):
 
 
 @app.route('/friendgroup', methods=['POST'])
-def addFreindGroup():
+def addFriendGroup():
     response = {}
     status = 200
 
