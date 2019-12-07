@@ -286,6 +286,24 @@ def uploaded_file(filename):
 @app.route('/logout', methods=["DELETE"])
 def logout():
     return jsonify({ "msg": 'User Logged Out!' }), 200
+
+@app.route('/search/<key>', methods=['GET'])
+@jwt_required
+def search_id(key):
+    response = {}
+    status = 200
+
+    user = get_jwt_identity()
+
+    if (user):
+        try:
+            with conn.cursor() as cursor:
+                query = '''INSERT INTO Follow
+                            VALUES (%s, %s, False)
+                            '''
+    
+    return result
+
         
 #Run the app on localhost port 5000
 #debug = True -> you don't have to restart flask
