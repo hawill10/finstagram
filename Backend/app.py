@@ -223,6 +223,54 @@ def specificPhoto_view(photo_id):
     result.status_code = status
     return result
 
+@app.route('/search_by_poster', methods=['GET'])
+def search_by_poster():
+    response = {}
+    status = 200
+
+    user = get_jwt_identity()
+    poster_data = request.get_json()
+    poster = poster_data.get('poster')
+
+    # if user logged in
+    if (user):
+        try:
+            with conn.cursor() as cursor:
+                # find all photos that can be viewed by the user
+                query = """SELECT photoID, filepath, photoPoster, caption, postingdate
+                        FROM Photo AS P
+                        WHERE ((allFollowers = True AND photoPoster IN (SELECT username_followed
+                                                                        FROM Follow
+                                                                        WHERE username_follower = %s AND
+                                                                            username_followed = P.photoPoster AND
+                                                                            followstatus = True))
+                            OR
+                            photoID IN (SELECT photoID
+                                        FROM SharedWithWhom
+                                        WHERE member_username = %s AND groupOwner = P.photoPoster AND photoID = P.photoID
+                                        )
+                            OR
+                            photoPoster = %s
+                            AND
+                            P.PhotoPoster = %s)
+                        ORDER BY photoID DESC"""
+                cursor.execute(query, (user, user, user, poster))
+                result_list = cursor.fetchall()
+                
+                response['data'] = result_list
+        except Exception as error:
+            errorMsg = error.args
+            response["errMsg"] = errorMsg
+            status = 400
+
+    else:
+        response["errMsg"] = "You have to login"
+        status = 401
+    
+    result = jsonify(response)
+    result.status_code = status
+    return result
+
 @app.route('/feed/<photo_id>/like', methods=['POST'])
 @jwt_required
 def like(photo_id):
