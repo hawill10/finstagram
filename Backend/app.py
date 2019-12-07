@@ -283,6 +283,44 @@ def post():
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
+
+@app.route('/friendgroup', methods=['POST'])
+def addFreindGroup():
+    response = {}
+    status = 200
+
+    user = get_jwt_identity()
+    name_data = request.get_json()
+
+    groupname = name_data.get('groupName')
+    description = name_data.get('description')
+
+    if(user):
+        try:
+            with conn.cursor() as cursor:
+                query = '''SELECT count(*) AS cnt
+                           FROM Friendgroup as F
+                           WHERE F.groupOwner = %s and F.groupName = %s'''
+                cursor.execute(query, (user, groupname))
+                data = cursor.fetchone()
+                exists = data['cnt']
+
+                if(exists):
+                    response['errMsg'] = "%s is already taken." % (groupname)  
+                    status = 400
+                else:
+                    query = "INSERT INTO Friendgroup(groupOwner, groupName, description) VALUES(%s, %s, %s)"
+                    cursor.execute(query, (user, groupname, description))
+                    conn.commit()
+        except pymysql.err.IntegrityError:
+            response['errMsg'] = "%s is already taken." % (username)  
+            status = 400
+    else:
+        response["errMsg"] = "You have to login"
+        status = 401
+
+
+
 @app.route('/logout', methods=["DELETE"])
 def logout():
     return jsonify({ "msg": 'User Logged Out!' }), 200
