@@ -318,11 +318,49 @@ def addFreindGroup():
     else:
         response["errMsg"] = "You have to login"
         status = 401
-        
+
     result = jsonify(response)
     result.status_code = status
     return result
 
+@app.route('/addfriend', methods=['POST'])
+def addFreind():
+    response = {}
+    status = 200
+
+    user = get_jwt_identity()
+    friend_data = request.get_json()
+
+    friendname = name_data.get('memberName')
+    groupname = name_data.get('groupName')
+
+    if(user):
+        try:
+            with conn.cursor() as cursor:
+                query = '''SELECT count(*) AS cnt
+                           FROM BelongTo as B
+                           WHERE B.owner_username = %s and B.member_username = %s'''
+                cursor.execute(query, (user, friendname))
+                data = cursor.fetchone()
+                exists = data['cnt']
+
+                if(exists):
+                    response['errMsg'] = "%s is already in the group." % (friendname)  
+                    status = 400
+                else:
+                    query = "INSERT INTO BelongTo(member_username, owner_username, groupName) VALUES(%s, %s, %s)"
+                    cursor.execute(query, (friendname, user, groupname))
+                    conn.commit()
+        except pymysql.err.IntegrityError:
+            response['errMsg'] = "%s is already taken." % (friendname)  
+            status = 400
+    else:
+        response["errMsg"] = "You have to login"
+        status = 401
+        
+    result = jsonify(response)
+    result.status_code = status
+    return result
 
 
 @app.route('/logout', methods=["DELETE"])
