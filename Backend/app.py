@@ -409,6 +409,82 @@ def show_friendgroups():
     result.status_code = status
     return result
 
+
+
+@app.route('/friendgroups', methods=['GET'])
+def show_friendgroups():
+    response = {}
+    status = 200
+
+    user = get_jwt_identity()
+
+    if(user):
+        try:
+            with conn.cursor() as cursor:
+                query = '''SELECT groupName, description, groupOwner
+                           FROM Friendgroup AS F
+                           WHERE B.owner_username = %s'''
+                cursor.execute(query,(user))
+                friendgroup = cursor.fetchall() 
+                #user is the owner
+                for group_dict in friendgroup:
+                    member_list = []
+                    group = group_dict["groupName"]
+
+                    query = '''SELECT member_username
+                               FROM BelongTo as B
+                               WHERE B.owner_username = %s AND B.groupName = %s'''
+                    cursor.execute(query,(user,group))
+                    member_dict = cursor.fetchall()
+
+                    for member in member_dict:
+                        member_list.append(member["member_username"])
+                    
+                    group_dict["members"] = member_list
+                #user is a member
+                query = '''SELECT groupName, owner_username
+                           FROM BelongTo AS B
+                           WHERE B.member_username = %s'''
+                cursor.execute(query,(user))
+                membergroup = cursor.fetchall()
+
+                for group in membergroup:
+                    groupname = group["groupName"]
+                    groupowner = group["owner_username"]
+                    query = '''SELECT description
+                               FROM Friendgroup as F
+                               WHERE F.groupName = %s AND F.groupOwner = %s'''
+                    cursor.execute(query,(groupname, groupowner))
+                    description_dict = cursor.fetchone()
+                    group["description"] = description_dict["description"]
+
+                    query = '''SELECT member_username
+                               FROM BelongTo as B
+                               WHERE B.owner_username = %s AND B.groupName = %s'''
+                    cursor.execute(query,(groupowner, groupname))
+                    member_dict = cursor.fetchall()
+
+                    member_list = []
+                    for i in member_dict:
+                        member_list.append(i["member_username"])
+                    group["members"] = member_list
+
+                friendgroup.append(membergroup)
+                response["friendgroups"] = friendgroup
+
+        except Exception as error:
+            errorMsg = error.args
+            response["errMsg"] = errorMsg
+            status = 400
+    
+    else:
+        response["errMsg"] = "You have to login"
+        status = 401
+    
+    result = jsonify(response)
+    result.status_code = status
+    return result
+
 @app.route('/create_friendgroup', methods=['POST'])
 def CreateFriendGroup():
     response = {}
