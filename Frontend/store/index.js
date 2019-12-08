@@ -3,7 +3,9 @@ export const state = () => ({
   token: null,
   feeds: [],
   feed: {},
-  isPhotoModalOpen: false
+  isPhotoModalOpen: false,
+  followRequests: [],
+  tagRequests: []
 })
 
 export const getters = {
@@ -12,6 +14,12 @@ export const getters = {
   },
   getFeed (state) {
     return state.feed
+  },
+  getFollowRequests (state) {
+    return state.followRequests
+  },
+  getTagRequests (state) {
+    return state.tagRequests
   }
 }
 
@@ -31,10 +39,17 @@ export const mutations = {
   },
   SET_FEED (state, payload) {
     state.feed = payload
+  },
+  SET_FOLLOW_REQUESTS (state, payload) {
+    state.followRequests = payload
+  },
+  SET_TAG_REQUESTS (state, payload) {
+    state.tagRequests = payload
   }
 }
 
 export const actions = {
+  // ---------------- Authentication API Endpoints ----------------
   async login ({ commit }, { username, password }) {
     try {
       const { data } = await this.$axios.post('login', {
@@ -66,6 +81,7 @@ export const actions = {
       throw e.response.data.errMsg
     }
   },
+  // ---------------- Feed API Endpoints ----------------
   async getFeeds ({ commit }) {
     try {
       const { data } = await this.$axios.get('feed')
@@ -74,10 +90,14 @@ export const actions = {
       throw e.response.data.errMsg
     }
   },
-  async getFeed ({ commit, state }, id) {
+  async getFeed ({ commit }, id) {
     try {
       const { data } = await this.$axios.get(`feed/${id}`)
-      commit('SET_FEED', data.data)
+      commit('SET_FEED', {
+        ...data.data,
+        tagged: [ ...data.tagged ],
+        rating: [ ...data.rating ]
+      })
     } catch (e) {
       throw e.response.data.errMsg
     }
@@ -85,6 +105,87 @@ export const actions = {
   async uploadPhoto ({ commit }, payload) {
     try {
       await this.$axios.post('post', payload)
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  // ---------------- Follower API Endpoints ----------------
+  async getFollowRequests ({ commit }) {
+    try {
+      const { data } = await this.$axios.get('follow-request')
+      console.log(data)
+      commit('SET_FOLLOW_REQUESTS', data.follow_requests)
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  async createFollowRequest ({ state }) {
+    try {
+      await this.$axios.put(`create-follow/${state.username}`)
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  async updateFollowRequest ({ state, commit }, payload) {
+    // accept: Boolean
+    // follower: String
+    try {
+      const res = await this.$axios.post('follow-request', payload)
+      if (res.status === 200) {
+        const updatedTags = state.followRequests.filter(req => req.username_follower !== payload.follower)
+        commit('SET_FOLLOW_REQUESTS', updatedTags)
+      }
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  // ---------------- Follower API Endpoints ----------------
+  async getTagRequests ({ commit }) {
+    try {
+      const { data } = await this.$axios.get('tag-request')
+      console.log(data)
+      commit('SET_TAG_REQUESTS', data.tag_requests)
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  async createTagRequest ({ state }, { photoID, tagged }) {
+    try {
+      await this.$axios.post(`feed/${photoID}/addTag`, { tagged })
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  async updateTagRequest ({ state, commit }, payload) {
+    // accept: Boolean
+    // photoID: Integer
+    try {
+      const res = await this.$axios.post('tag-request', payload)
+      if (res.status === 200) {
+        const updatedTags = state.tagRequests.filter(req => req.photoID !== payload.photoID)
+        commit('SET_TAG_REQUESTS', updatedTags)
+      }
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  async createLike ({ state, commit }, { photoID, rating }) {
+    try {
+      const res = await this.$axios.post(`feed/${photoID}/like`, { rating })
+      const { username } = state
+      if (res.status === 200) {
+        const updatedFeed = {
+          ...state.feed,
+          rating: [
+            ...state.feed.rating,
+            {
+              username,
+              rating
+            }
+          ]
+        }
+        commit('SET_FEED', updatedFeed)
+      }
     } catch (e) {
       throw e.response.data.errMsg
     }

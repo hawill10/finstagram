@@ -223,9 +223,9 @@ def specificPhoto_view(photo_id):
     result.status_code = status
     return result
 
-@app.route('/feed/<photo_id>/like', methods=['POST'])
+@app.route('/feed/<photoID>/like', methods=['POST'])
 @jwt_required
-def like(photo_id):
+def like(photoID):
     status = 200
     response = {}
 
@@ -243,7 +243,7 @@ def like(photo_id):
                             INSERT INTO Likes
                             VALUES (%s, %s, NOW(), %s)
                             '''
-                cursor.execute(likeQuery, (user, photo_id, rating))
+                cursor.execute(likeQuery, (user, photoID, rating))
                 conn.commit()
 
         except Exception as error:
@@ -528,9 +528,9 @@ def search_id(key):
     result.status_code = status
     return result
 
-@app.route('/search/<key>/addFollow', methods=['GET'])
+@app.route('/create-follow/<username>', methods=['PUT'])
 @jwt_required
-def addFollow(key):
+def addFollow(username):
     response = {}
     status = 200
 
@@ -543,7 +543,7 @@ def addFollow(key):
                 query = '''INSERT INTO Follow
                             VALUES (%s, %s, False)
                             '''
-                cursor.execute(query, (key, user))
+                cursor.execute(query, (username, user))
                 conn.commit()
 
         except Exception as error:
@@ -559,7 +559,7 @@ def addFollow(key):
     result.status_code = status
     return result
 
-@app.route('/follow_request', methods=['GET', 'POST'])
+@app.route('/follow-request', methods=['GET', 'POST'])
 @jwt_required
 def follow_request():
     if request.method == 'GET':
@@ -567,6 +567,7 @@ def follow_request():
         status = 200
 
         user = get_jwt_identity()
+        print(user, file=sys.stdout)
 
         if (user):
             try:
@@ -640,9 +641,9 @@ def follow_request():
         result.status_code = status
         return result
 
-@app.route('/feed/<photo_id>/addTag', methods=['POST'])
+@app.route('/feed/<photoID>/addTag', methods=['POST'])
 @jwt_required
-def addTag(photo_id):
+def addTag(photoID):
     response = {}
     status = 200
 
@@ -662,7 +663,7 @@ def addTag(photo_id):
                     query = '''INSERT INTO Tagged
                                 VALUES (%s, %s, True)
                                 '''
-                    cursor.execute(query, (user, photo_id))
+                    cursor.execute(query, (user, photoID))
                     conn.commit()
                 else:
                     # check if the tagged person has permission to view the photo
@@ -671,7 +672,7 @@ def addTag(photo_id):
                     query = '''SELECT photoPoster
                                 FROM Photo
                                 WHERE photoID = %s'''
-                    cursor.execute(query, (photo_id))
+                    cursor.execute(query, (photoID))
                     data = cursor.fetchone()
                     poster = data['photoPoster']
 
@@ -688,7 +689,7 @@ def addTag(photo_id):
                                                                                         WHERE username_followed = %s AND
                                                                                         username_follower = %s AND
                                                                                         followStatus = True)))'''
-                    cursor.execute(query, (photo_id, poster, photo_id, tagged, poster, tagged))
+                    cursor.execute(query, (photoID, poster, photoID, tagged, poster, tagged))
                     data = cursor.fetchone()
                     permitted = data['cnt']
                     # if the user has permissio to access the photo, add tag
@@ -696,7 +697,7 @@ def addTag(photo_id):
                         insertTag = '''INSERT INTO Tagged
                                         VALUES (%s, %s, False)
                                         '''
-                        cursor.execute(insertTag, (tagged, photo_id))
+                        cursor.execute(insertTag, (tagged, photoID))
                         conn.commit()
                     else:
                         status = 400
@@ -715,13 +716,14 @@ def addTag(photo_id):
     result.status_code = status
     return result
 
-@app.route('/tag_request', methods = ['GET', 'POST'])
+@app.route('/tag-request', methods = ['GET', 'POST'])
 @jwt_required
 def tag_request():
     response = {}
     status = 200
 
     user = get_jwt_identity()
+    print(user, file=sys.stdout)
 
     if (user):
         if request.method == 'GET':
@@ -730,7 +732,7 @@ def tag_request():
                 with conn.cursor() as cursor:
                     requestedTagQuery = '''SELECT photoID
                                     FROM Tagged
-                                    WHERE username = %s AND acceptedTag = False
+                                    WHERE username = %s AND tagstatus = 0
                                     '''
                     cursor.execute(requestedTagQuery, (user))
                     tagRequests = cursor.fetchall()
@@ -747,7 +749,7 @@ def tag_request():
 
             #grabs information from the forms
             accept = post_data.get('accept')
-            photo_id = post_data.get('photo_id')
+            photoID = post_data.get('photoID')
 
             try:
                 with conn.cursor() as cursor:
@@ -758,14 +760,14 @@ def tag_request():
                                     SET tagstatus = True
                                     WHERE username = %s AND photoID = %s
                                     '''
-                        cursor.execute(acceptTag, (user, photo_id))
+                        cursor.execute(acceptTag, (user, photoID))
                         conn.commit()
                     else:
                         # user declines tag
                         declineTag = '''DELETE FROM Tagged
                                         WHERE username = %s AND photoID = %s
                                         '''
-                        cursor.execute(declineTag, (user, photo_id))
+                        cursor.execute(declineTag, (user, photoID))
                         conn.commit()
 
             except Exception as error:

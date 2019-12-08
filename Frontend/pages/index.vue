@@ -45,16 +45,16 @@
     >
       {{ error }}
     </v-alert>
-    <registerModal @toggleModal="toggleModal" :isOpen="isOpen" />
+    <RegisterModal @toggleModal="toggleModal" :isOpen="isOpen" />
   </v-layout>
 </template>
 
 <script>
-import registerModal from '@/components/registerModal'
+import RegisterModal from '@/components/RegisterModal'
 export default {
   layout: 'auth',
   components: {
-    registerModal
+    RegisterModal
   },
   middleware ({ store, redirect }) {
     // If the user is authenticated

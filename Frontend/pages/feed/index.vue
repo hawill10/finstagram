@@ -30,16 +30,16 @@
         </v-card>
       </v-col>
     </v-row>
-    <image-upload-modal-vue />
+    <ImageUploadModal />
   </v-layout>
 </template>
 
 <script>
-import imageUploadModalVue from '@/components/imageUploadModal.vue'
+import ImageUploadModal from '@/components/ImageUploadModal.vue'
 export default {
   name: 'Feed',
   components: {
-    imageUploadModalVue
+    ImageUploadModal
   },
   computed: {
     feeds () {
