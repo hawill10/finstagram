@@ -27,6 +27,9 @@ export const getters = {
   getSearchList (state) {
     return state.searchList
   },
+  getSearchPoster (state) {
+    return state.searchPoster
+  },
   getFriendGroups (state) {
     return state.friendGroups
   }
@@ -137,9 +140,9 @@ export const actions = {
       throw e.response.data.errMsg
     }
   },
-  async createFollowRequest ({ state }) {
+  async createFollowRequest ({ state }, username) {
     try {
-      await this.$axios.put(`create-follow/${state.username}`)
+      await this.$axios.put(`create-follow`, { username })
     } catch (e) {
       throw e.response.data.errMsg
     }
@@ -221,11 +224,25 @@ export const actions = {
       throw e.response.data.errMsg
     }
   },
+  async searchByUsername ({ commit }, username) {
+    try {
+      const res = await this.$axios.post('search', { username })
+      console.log(res)
+      if (res.status === 200) {
+        const { followstatus } = res.data.followstatus === null ? res.data : res.data.followstatus
+        commit('SET_SEARCH_POSTER', { username, followstatus })
+      }
+    } catch (e) {
+      console.log('ERROR HERE')
+      throw e.response.data.errMsg
+    }
+  },
   async searchByPhotoPoster ({ commit }, poster) {
     try {
       const res = await this.$axios.post('search-by-poster', { poster })
+      console.log('SEARCH POSTER')
+      console.log(res)
       if (res.status === 200 && res.data.data.length > 0) {
-        commit('SET_SEARCH_POSTER', poster)
         commit('SET_SEARCH_LIST', res.data.data)
       }
     } catch (e) {

@@ -245,7 +245,7 @@ def search_by_poster():
                 # find all photos that can be viewed by the user
                 query = """SELECT photoID, filepath, photoPoster, caption, postingdate
                         FROM Photo AS P
-                        WHERE P.PhotoPoster = %s AND ((allFollowers = True AND photoPoster IN (SELECT username_followed
+                        WHERE photoPoster = %s AND ((allFollowers = True AND photoPoster IN (SELECT username_followed
                                                                         FROM Follow
                                                                         WHERE username_follower = %s AND
                                                                             username_followed = P.photoPoster AND
@@ -260,7 +260,6 @@ def search_by_poster():
                         ORDER BY photoID DESC"""
                 cursor.execute(query, (poster, user, user, user))
                 result_list = cursor.fetchall()
-                
                 response['data'] = result_list
         except Exception as error:
             errorMsg = error.args
@@ -539,13 +538,16 @@ def addFriend():
 def logout():
     return jsonify({ "msg": 'User Logged Out!' }), 200
 
-@app.route('/search/<key>', methods=['GET'])
+@app.route('/search', methods=['POST'])
 @jwt_required
-def search_id(key):
+def search_id():
     response = {}
     status = 200
 
     user = get_jwt_identity()
+    request_data = request.get_json()
+
+    key = request_data.get('username')
 
     if (user):
         try:
@@ -578,18 +580,20 @@ def search_id(key):
     else:
         response["errMsg"] = "You have to login"
         status = 401
-        
+    
     result = jsonify(response)
     result.status_code = status
     return result
 
-@app.route('/create-follow/<username>', methods=['PUT'])
+@app.route('/create-follow', methods=['PUT'])
 @jwt_required
-def addFollow(username):
+def addFollow():
     response = {}
-    status = 200
+    status = 201
 
     user = get_jwt_identity()
+    put_request = request.get_json()
+    username = put_request.get('username')
 
     if (user):
         try:

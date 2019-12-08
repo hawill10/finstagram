@@ -14,17 +14,12 @@
         />
       </v-col>
     </v-row>
-    <v-row v-if="showErrorMsg">
+    <v-row v-if="searchPoster">
       <v-col xs="12" sm="6" offset-sm="3">
-        <p class="text-center font-weight-bold">{{ errMsg }}</p>
-      </v-col>
-    </v-row>
-    <v-row v-if="searchList.length !== 0">
-      <v-col xs="12" sm="6" offset-sm="3">
-        <v-list-item>
+        <v-list-item elevation="3">
           <v-list-item-content>
             <v-list-item-title class="font-weight-bold">
-              {{ this.$store.state.searchPoster }}
+              {{ searchPoster.username || '' }}
             </v-list-item-title>
           </v-list-item-content>
           <v-row
@@ -32,14 +27,24 @@
             justify="end"
           >
             <v-btn
-              class="primary request__button"
+              @click="requestFollow(searchPoster.username)"
+              :disabled="followBtnDisabled"
+              :class="followBtnColor"
+              class="request__button"
               small
               depressed
             >
-              REQUEST FOLLOW
+              {{ followBtnTitle }}
             </v-btn>
           </v-row>
         </v-list-item>
+      </v-col>
+    </v-row>
+    <v-row v-if="showErrorMsg">
+      <v-col xs="12" sm="6" offset-sm="3">
+        <p class="text-center font-weight-bold">
+          {{ errMsg }}
+        </p>
       </v-col>
     </v-row>
     <v-row v-if="searchList.length !== 0" no-gutters>
@@ -82,10 +87,16 @@ export default {
     return {
       poster: '',
       errMsg: '',
-      showErrorMsg: false
+      showErrorMsg: false,
+      followBtnTitle: '',
+      followBtnColor: '',
+      followBtnDisabled: false
     }
   },
   computed: {
+    searchPoster () {
+      return this.$store.getters.getSearchPoster
+    },
     searchList () {
       return this.$store.getters.getSearchList
     }
@@ -98,12 +109,34 @@ export default {
   },
   methods: {
     search (poster) {
-      this.$store.dispatch('searchByPhotoPoster', poster)
+      this.$store.commit('SET_SEARCH_POSTER', '')
+      this.$store.commit('SET_SEARCH_LIST', [])
+      this.errMsg = ''
+      this.showErrorMsg = false
+      // Search Username
+      this.$store.dispatch('searchByUsername', poster)
         .then(() => {
-          if (this.searchList.length === 0) {
+          if (!this.searchPoster) {
             this.errMsg = `${poster} is not found.`
             this.showErrorMsg = true
+          } else if (this.searchPoster.followstatus === 1) {
+            // Search By Poster if followed
+            this.$store.dispatch('searchByPhotoPoster', poster)
+              .then(() => {
+                if (this.searchList.length === 0) {
+                  this.errMsg = `${poster} has no photos uploaded.`
+                  this.showErrorMsg = true
+                }
+              })
+              .catch((e) => {
+                this.errMsg = e
+                this.showErrorMsg = true
+              })
+          } else if (this.searchPoster.username !== this.$store.state.username) {
+            this.errMsg = `You have to follow ${poster} to see the photos.`
+            this.showErrorMsg = true
           }
+          this.updateFollowButton()
         })
         .catch((e) => {
           this.errMsg = e
@@ -112,6 +145,37 @@ export default {
     },
     navigateTo (id) {
       this.$router.push(`/feed/${id}`)
+    },
+    requestFollow (username) {
+      this.$store.dispatch('createFollowRequest', username)
+        .then(() => {
+          this.followBtnTitle = 'FOLLOW REQUESTED'
+          this.followBtnColor = 'warning'
+          this.followBtnDisabled = true
+        })
+        .catch((e) => {
+          this.errMsg = e
+          this.showErrorMsg = true
+        })
+    },
+    updateFollowButton () {
+      if (this.searchPoster.username === this.$store.state.username) {
+        this.followBtnTitle = 'NOT APPLICABLE'
+        this.followBtnColor = 'error'
+        this.followBtnDisabled = true
+      } else if (this.searchPoster.followstatus === null) {
+        this.followBtnTitle = 'REQUEST FOLLOW'
+        this.followBtnColor = 'primary'
+        this.followBtnDisabled = false
+      } else if (this.searchPoster.followstatus === false) {
+        this.followBtnTitle = 'FOLLOW REQUESTED'
+        this.followBtnColor = 'warning'
+        this.followBtnDisabled = true
+      } else {
+        this.followBtnTitle = 'FOLLOWED'
+        this.followBtnColor = 'primary'
+        this.followBtnDisabled = true
+      }
     }
   },
   middleware ({ store, redirect }) {
