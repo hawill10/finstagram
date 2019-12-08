@@ -245,7 +245,7 @@ def search_by_poster():
                 # find all photos that can be viewed by the user
                 query = """SELECT photoID, filepath, photoPoster, caption, postingdate
                         FROM Photo AS P
-                        WHERE ((allFollowers = True AND photoPoster IN (SELECT username_followed
+                        WHERE P.PhotoPoster = %s AND ((allFollowers = True AND photoPoster IN (SELECT username_followed
                                                                         FROM Follow
                                                                         WHERE username_follower = %s AND
                                                                             username_followed = P.photoPoster AND
@@ -256,11 +256,9 @@ def search_by_poster():
                                         WHERE member_username = %s AND groupOwner = P.photoPoster AND photoID = P.photoID
                                         )
                             OR
-                            photoPoster = %s
-                            AND
-                            P.PhotoPoster = %s)
+                            photoPoster = %s)
                         ORDER BY photoID DESC"""
-                cursor.execute(query, (user, user, user, poster))
+                cursor.execute(query, (poster, user, user, user))
                 result_list = cursor.fetchall()
                 
                 response['data'] = result_list
