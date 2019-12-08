@@ -14,6 +14,11 @@
         />
       </v-col>
     </v-row>
+    <v-row v-if="showErrorMsg">
+      <v-col xs="12" sm="6" offset-sm="3">
+        <p class="text-center font-weight-bold">{{ errMsg }}</p>
+      </v-col>
+    </v-row>
     <v-row v-if="searchList.length !== 0">
       <v-col xs="12" sm="6" offset-sm="3">
         <v-list-item>
@@ -75,7 +80,9 @@ export default {
   name: 'SearchPage',
   data () {
     return {
-      poster: ''
+      poster: '',
+      errMsg: '',
+      showErrorMsg: false
     }
   },
   computed: {
@@ -86,11 +93,22 @@ export default {
   mounted () {
     this.$store.commit('SET_SEARCH_POSTER', '')
     this.$store.commit('SET_SEARCH_LIST', [])
+    this.errMsg = ''
+    this.showErrorMsg = false
   },
   methods: {
     search (poster) {
-      console.log(poster)
       this.$store.dispatch('searchByPhotoPoster', poster)
+        .then(() => {
+          if (this.searchList.length === 0) {
+            this.errMsg = `${poster} is not found.`
+            this.showErrorMsg = true
+          }
+        })
+        .catch((e) => {
+          this.errMsg = e
+          this.showErrorMsg = true
+        })
     },
     navigateTo (id) {
       this.$router.push(`/feed/${id}`)

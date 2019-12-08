@@ -411,8 +411,8 @@ def show_friendgroups():
     result.status_code = status
     return result
 
-@app.route('/add_friendgroup', methods=['POST'])
-def addFriendGroup():
+@app.route('/create_friendgroup', methods=['POST'])
+def CreateFriendGroup():
     response = {}
     status = 200
 

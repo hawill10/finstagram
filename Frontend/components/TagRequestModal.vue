@@ -14,7 +14,7 @@
             />
           </v-row>
         </v-container>
-        <small>{{ errMsg }}</small>
+        <small>{{ errMsg[1] }}</small>
       </v-card-text>
       <v-card-actions>
         <v-spacer />

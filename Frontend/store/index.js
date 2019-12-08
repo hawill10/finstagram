@@ -7,7 +7,8 @@ export const state = () => ({
   followRequests: [],
   tagRequests: [],
   searchPoster: '',
-  searchList: []
+  searchList: [],
+  friendGroups: []
 })
 
 export const getters = {
@@ -25,6 +26,9 @@ export const getters = {
   },
   getSearchList (state) {
     return state.searchList
+  },
+  getFriendGroups (state) {
+    return state.friendGroups
   }
 }
 
@@ -56,6 +60,9 @@ export const mutations = {
   },
   SET_SEARCH_LIST (state, payload) {
     state.searchList = payload
+  },
+  SET_FRIEND_GROUPS (state, payload) {
+    state.friendGroups = payload
   }
 }
 
@@ -217,10 +224,59 @@ export const actions = {
   async searchByPhotoPoster ({ commit }, poster) {
     try {
       const res = await this.$axios.post('search-by-poster', { poster })
-      console.log(res)
       if (res.status === 200 && res.data.data.length > 0) {
         commit('SET_SEARCH_POSTER', poster)
         commit('SET_SEARCH_LIST', res.data.data)
+      }
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  // async getFriendGroups ({ commit }) {
+  //   try {
+  //     const res = await this.$axios.get('friendgroups')
+  //     const friendGroup = {
+  //       ...res.data.data.owning,
+  //       members: [
+  //         ...res.data.data.member
+  //       ]
+  //     }
+  //     commit('SET_FRIEND_GROUPS', friendGroup)
+  //   } catch (e) {
+  //     throw e.response.data.errMsg
+  //   }
+  // },
+  async createFriendGroups ({ state, commit }, payload) {
+    // groupName, description
+    const { username } = state
+    try {
+      const res = await this.$axios.post('create_friendgroup', payload)
+      if (res.status === 200) {
+        const updatedFriendGroups = [
+          ...state.friendGroups,
+          {
+            ...payload,
+            username,
+            member: []
+          }
+        ]
+        commit('SET_FRIEND_GROUPS', updatedFriendGroups)
+      }
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  async addFriendToGroup ({ state, commit }, payload) {
+    // memberName, groupName
+    try {
+      const res = await this.$axios.post('addfriend', payload)
+      if (res.status === 200) {
+        const updatedFriendGroups = state.friendGroup.map((group) => {
+          if (group.groupName === payload.groupName) {
+            group.member.push(payload.memberName)
+          }
+        })
+        commit('SET_FRIEND_GROUPS', updatedFriendGroups)
       }
     } catch (e) {
       throw e.response.data.errMsg

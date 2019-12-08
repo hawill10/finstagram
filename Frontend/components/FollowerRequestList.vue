@@ -51,11 +51,6 @@
 
 <script>
 export default {
-  data () {
-    return {
-
-    }
-  },
   computed: {
     followRequests () {
       return this.$store.getters.getFollowRequests

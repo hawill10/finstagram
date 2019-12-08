@@ -14,7 +14,10 @@
     <v-list-item v-for="request in tagRequests" :key="request.index">
       <v-list-item-content>
         <v-list-item-title>
-          PhotoID: {{ request.photoID }}
+          PhotoID:
+          <span @click="navigateTo(request.photoID)" class="tag__link">
+            {{ request.photoID }}
+          </span>
         </v-list-item-title>
       </v-list-item-content>
       <v-row
@@ -51,11 +54,6 @@
 
 <script>
 export default {
-  data () {
-    return {
-
-    }
-  },
   computed: {
     tagRequests () {
       return this.$store.getters.getTagRequests
@@ -65,7 +63,17 @@ export default {
     updateTag (photoID, accept) {
       this.$store.dispatch('updateTagRequest', { accept, photoID })
         .catch(e => console.log(e))
+    },
+    navigateTo (url) {
+      this.$router.push(`feed/${url}`)
     }
   }
 }
 </script>
+
+<style lang='scss'>
+.tag__link {
+  text-decoration: underline;
+  cursor: pointer;
+}
+</style>
