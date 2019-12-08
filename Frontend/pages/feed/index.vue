@@ -30,6 +30,11 @@
         </v-card>
       </v-col>
     </v-row>
+    <v-row v-if="feeds.length === 0">
+      <v-col>
+        <p class="text-center">Nothing to show in your feed!</p>
+      </v-col>
+    </v-row>
     <ImageUploadModal />
   </v-layout>
 </template>

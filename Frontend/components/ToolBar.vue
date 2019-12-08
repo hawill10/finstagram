@@ -8,6 +8,9 @@
     <v-toolbar-title @click="navigateTo('/feed')" v-text="title" depressed class="toolbar__title" />
     <v-spacer />
     <small class="toolbar__username">{{ this.$store.state.username }}</small>
+    <v-btn @click="navigateTo('/search')" depressed class="toolbar__button">
+      Search
+    </v-btn>
     <v-btn @click="navigateTo('/profile')" depressed class="toolbar__button">
       My Profile
     </v-btn>

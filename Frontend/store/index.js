@@ -5,7 +5,9 @@ export const state = () => ({
   feed: {},
   isPhotoModalOpen: false,
   followRequests: [],
-  tagRequests: []
+  tagRequests: [],
+  searchPoster: '',
+  searchList: []
 })
 
 export const getters = {
@@ -20,6 +22,9 @@ export const getters = {
   },
   getTagRequests (state) {
     return state.tagRequests
+  },
+  getSearchList (state) {
+    return state.searchList
   }
 }
 
@@ -45,6 +50,12 @@ export const mutations = {
   },
   SET_TAG_REQUESTS (state, payload) {
     state.tagRequests = payload
+  },
+  SET_SEARCH_POSTER (state, payload) {
+    state.searchPoster = payload
+  },
+  SET_SEARCH_LIST (state, payload) {
+    state.searchList = payload
   }
 }
 
@@ -90,9 +101,9 @@ export const actions = {
       throw e.response.data.errMsg
     }
   },
-  async getFeed ({ commit }, id) {
+  async getFeed ({ commit }, photoID) {
     try {
-      const { data } = await this.$axios.get(`feed/${id}`)
+      const { data } = await this.$axios.get(`feed/${photoID}`)
       commit('SET_FEED', {
         ...data.data,
         tagged: [ ...data.tagged ],
@@ -149,9 +160,22 @@ export const actions = {
       throw e.response.data.errMsg
     }
   },
-  async createTagRequest ({ state }, { photoID, tagged }) {
+  async createTagRequest ({ state, commit }, { photoID, tagged }) {
     try {
-      await this.$axios.post(`feed/${photoID}/addTag`, { tagged })
+      const res = await this.$axios.post(`feed/${photoID}/addTag`, { tagged })
+      const { username } = state
+      if (res.status === 200 && state.username === tagged) {
+        const updatedFeed = {
+          ...state.feed,
+          tagged: [
+            ...state.feed.tagged,
+            {
+              username
+            }
+          ]
+        }
+        commit('SET_FEED', updatedFeed)
+      }
     } catch (e) {
       throw e.response.data.errMsg
     }
@@ -185,6 +209,18 @@ export const actions = {
           ]
         }
         commit('SET_FEED', updatedFeed)
+      }
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
+  async searchByPhotoPoster ({ commit }, poster) {
+    try {
+      const res = await this.$axios.post('search-by-poster', { poster })
+      console.log(res)
+      if (res.status === 200 && res.data.data.length > 0) {
+        commit('SET_SEARCH_POSTER', poster)
+        commit('SET_SEARCH_LIST', res.data.data)
       }
     } catch (e) {
       throw e.response.data.errMsg

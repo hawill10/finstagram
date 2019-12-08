@@ -181,10 +181,14 @@ def specificPhoto_view(photo_id):
                                                                                     FROM Follow
                                                                                     WHERE username_followed = %s AND
                                                                                     username_follower = %s AND
-                                                                                    followStatus = True)))'''
-                cursor.execute(query, (photo_id, poster, photo_id, user, poster, user))
+                                                                                    followStatus = True))
+                                                    OR
+                                                    photoPoster = %s)
+                                                    '''
+                cursor.execute(query, (photo_id, poster, photo_id, user, poster, user, user))
                 data = cursor.fetchone()
                 permitted = data['cnt']
+                print(permitted, file=sys.stdout)
                 # if the user has permissio to access the photo, get info
                 if (permitted):
                     # get photo data
@@ -223,12 +227,14 @@ def specificPhoto_view(photo_id):
     result.status_code = status
     return result
 
-@app.route('/search_by_poster', methods=['GET'])
+@app.route('/search-by-poster', methods=['POST'])
+@jwt_required
 def search_by_poster():
     response = {}
     status = 200
 
     user = get_jwt_identity()
+
     poster_data = request.get_json()
     poster = poster_data.get('poster')
 

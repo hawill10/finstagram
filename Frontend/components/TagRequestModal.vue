@@ -14,6 +14,7 @@
             />
           </v-row>
         </v-container>
+        <small>{{ errMsg }}</small>
       </v-card-text>
       <v-card-actions>
         <v-spacer />
@@ -30,7 +31,7 @@
 
 <script>
 export default {
-  name: 'LikeModal',
+  name: 'TagRequestModal',
   props: {
     isOpen: Boolean,
     photoID: {
@@ -40,17 +41,19 @@ export default {
   },
   data () {
     return {
-      taggedUsername: ''
+      taggedUsername: '',
+      errMsg: ''
     }
   },
   methods: {
-    submitRating (photoID, tagged) {
+    submitTagRequest (photoID, tagged) {
       this.$store.dispatch('createTagRequest', { photoID, tagged })
         .then(() => {
           this.taggedUsername = ''
+          this.errMsg = ''
           this.toggleModal()
         })
-        .catch(e => console.log(e))
+        .catch((e) => { this.errMsg = e })
     },
     toggleModal () {
       this.$emit('toggleModal')

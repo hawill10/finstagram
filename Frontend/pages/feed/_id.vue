@@ -33,7 +33,7 @@
             <v-btn @click="toggleLikeModal" :disabled="disableLike.length !== 0" color="primary" class="feedDetails__button">
               Like and Rate
             </v-btn>
-            <v-btn color="secondary" class="feedDetails__button">
+            <v-btn @click="toggleTagModal" color="secondary" class="feedDetails__button">
               Request Tag
             </v-btn>
           </v-card-actions>
