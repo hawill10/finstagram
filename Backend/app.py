@@ -346,8 +346,10 @@ def post():
 
                 maxID = cursor.fetchone()["maxID"]
 
-                query = "INSERT INTO SharedWith(groupOwner, groupName, photoID) VALUES(%s,%s,%s)"
-                cursor.execute(query,(groupowner,groupname,maxID))
+                if(not allFollowers):
+                    for name in groupname:
+                        query = "INSERT INTO SharedWith(groupOwner, groupName, photoID) VALUES(%s,%s,%s)"
+                        cursor.execute(query,(groupowner,name,maxID))
 
                 filename = secure_filename(str(maxID) + imageExtension)
                 fpath = os.path.join(UPLOAD_FOLDER, filename)
