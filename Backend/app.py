@@ -326,6 +326,8 @@ def post():
         imageExtension = request.form['imageExtension']
         allFollowers = request.form['allFollowers']
         caption = request.form['caption']
+        groupname = request.form['groupName']
+        groupowner = request.form['groupOwner']
     except Exception as error:
         print("ERROR", file=sys.stdout)
         print(error, file=sys.stdout)
@@ -343,6 +345,10 @@ def post():
                 cursor.execute(query)
 
                 maxID = cursor.fetchone()["maxID"]
+
+                query = "INSERT INTO SharedWith(groupOwner, groupName, photoID) VALUES(%s,%s,%s)"
+                cursor.execute(query,(groupowner,groupname,maxID))
+
                 filename = secure_filename(str(maxID) + imageExtension)
                 fpath = os.path.join(UPLOAD_FOLDER, filename)
 
@@ -474,6 +480,8 @@ def CreateFriendGroup():
                 else:
                     query = "INSERT INTO Friendgroup(groupOwner, groupName, description) VALUES(%s, %s, %s)"
                     cursor.execute(query, (user, groupname, description))
+                    query = "INSERT INTO BelongTo(member_username, owner_username, groupName) VALUES(%s,%s,%s)"
+                    cursor.execute(query,(user,user,groupname))
                     conn.commit()
         except pymysql.err.IntegrityError:
             response['errMsg'] = "%s is already taken." % (username)  
