@@ -14,6 +14,7 @@
         justify="end"
       >
         <v-btn
+          @click="toggleModal"
           class="request__button"
           color="primary"
           text

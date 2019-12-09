@@ -40,14 +40,25 @@
               />
             </v-col>
             <v-col cols="12">
+              <v-divider />
               <v-checkbox
                 v-model="isAllFollowers"
                 label="All Followers"
               />
+              <v-divider />
+            </v-col>
+            <v-col v-if="!isAllFollowers" cols="12">
+              <v-subheader>Share With Group</v-subheader>
+              <v-checkbox
+                v-for="(group, index) in groups"
+                v-model="groupNames"
+                :key="index"
+                :label="group"
+                :value="group"
+              />
             </v-col>
           </v-row>
         </v-container>
-        <small>*indicates required field</small>
       </v-card-text>
       <v-card-actions>
         <v-spacer />
@@ -72,12 +83,21 @@ export default {
       imageUrl: '',
       caption: '',
       errMsg: '',
-      isAllFollowers: false
+      isAllFollowers: false,
+      groupNames: []
     }
   },
   computed: {
     isOpen () {
       return this.$store.state.isPhotoModalOpen
+    },
+    groups () {
+      const groups = this.$store.state.ownedGroups
+      if (this.$store.state.ownedGroups) {
+        return groups.map(group => group.groupName)
+      } else {
+        return []
+      }
     }
   },
   methods: {
@@ -97,7 +117,7 @@ export default {
       }
     },
     submitImage () {
-      const { imageUrl, caption, file } = this
+      const { imageUrl, caption, file, groupNames } = this
       const allFollowers = this.isAllFollowers ? 1 : 0
 
       const imageExtension = `.${imageUrl.split(',')[0].split(':')[1].split(';')[0].split('/')[1]}`
@@ -109,6 +129,8 @@ export default {
       formData.append('rawFile', file)
       formData.append('caption', caption)
       formData.append('allFollowers', allFollowers)
+      formData.append('groupName', groupNames)
+      formData.append('groupOwner', this.$store.state.username)
 
       this.$store.dispatch('uploadPhoto', formData)
         .then(() => {
@@ -116,6 +138,7 @@ export default {
           this.imageUrl = ''
           this.caption = ''
           this.isAllFollowers = false
+          this.groupNames = []
           this.$store.dispatch('getFeeds')
           this.toggleModal()
         })

@@ -34,6 +34,7 @@ export default {
   methods: {
     togglePhotoModal () {
       this.$store.commit('TOGGLE_PHOTO_MODAL')
+      this.$store.dispatch('getFriendGroups')
     },
     logout () {
       this.$store.dispatch('logout')

@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="isOpen" persistent max-width="300px">
+  <v-dialog v-model="isOpen" persistent max-width="500px">
     <v-card>
       <v-card-title>
         Add New Friend Group
@@ -14,9 +14,10 @@
             />
           </v-row>
           <v-row align="center" justify="center">
-            <v-text-field
+            <v-textarea
               v-model="description"
               label="Group Description"
+              no-resize
               outlined
             />
           </v-row>
@@ -25,7 +26,7 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn @click="submitFriendGroup(photoID, taggedUsername)" color="primary" text>
+        <v-btn @click="submitFriendGroup(groupName, description)" color="primary" text>
           Submit
         </v-btn>
         <v-btn @click="toggleModal" color="error" text>

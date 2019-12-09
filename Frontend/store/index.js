@@ -272,21 +272,21 @@ export const actions = {
       throw e.response.data.errMsg
     }
   },
-  async createFriendGroups ({ state, commit }, payload) {
+  async createFriendGroup ({ state, commit }, payload) {
     // groupName, description
     const { username } = state
     try {
       const res = await this.$axios.post('create_friendgroup', payload)
       if (res.status === 200) {
-        const updatedFriendGroups = [
-          ...state.friendGroups,
+        const updatedOwnedGroups = [
+          ...state.ownedGroups,
           {
             ...payload,
-            username,
-            member: []
+            groupOwner: username,
+            members: [username]
           }
         ]
-        commit('SET_FRIEND_GROUPS', updatedFriendGroups)
+        commit('SET_OWNED_GROUPS', updatedOwnedGroups)
       }
     } catch (e) {
       throw e.response.data.errMsg
