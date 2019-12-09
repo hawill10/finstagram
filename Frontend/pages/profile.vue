@@ -11,7 +11,7 @@
     </v-row>
     <v-row>
       <v-col>
-        <h1>Hello!</h1>
+        <FriendGroupsList />
       </v-col>
     </v-row>
   </v-layout>
@@ -20,16 +20,19 @@
 <script>
 import FollowerRequestList from '@/components/FollowerRequestList'
 import TagRequestList from '@/components/TagRequestList'
+import FriendGroupsList from '@/components/FriendGroupsList'
 
 export default {
   name: 'Profile',
   components: {
     FollowerRequestList,
-    TagRequestList
+    TagRequestList,
+    FriendGroupsList
   },
   async fetch ({ store }) {
     await store.dispatch('getFollowRequests')
     await store.dispatch('getTagRequests')
+    await store.dispatch('getFriendGroups')
   },
   middleware ({ store, redirect }) {
     // If the user is not authenticated

@@ -249,20 +249,21 @@ export const actions = {
       throw e.response.data.errMsg
     }
   },
-  // async getFriendGroups ({ commit }) {
-  //   try {
-  //     const res = await this.$axios.get('friendgroups')
-  //     const friendGroup = {
-  //       ...res.data.data.owning,
-  //       members: [
-  //         ...res.data.data.member
-  //       ]
-  //     }
-  //     commit('SET_FRIEND_GROUPS', friendGroup)
-  //   } catch (e) {
-  //     throw e.response.data.errMsg
-  //   }
-  // },
+  async getFriendGroups ({ commit }) {
+    try {
+      const res = await this.$axios.get('friendgroups')
+      console.log(res)
+      // const friendGroup = {
+      //   ...res.data.data.owning,
+      //   members: [
+      //     ...res.data.data.member
+      //   ]
+      // }
+      // commit('SET_FRIEND_GROUPS', friendGroup)
+    } catch (e) {
+      throw e.response.data.errMsg
+    }
+  },
   async createFriendGroups ({ state, commit }, payload) {
     // groupName, description
     const { username } = state
