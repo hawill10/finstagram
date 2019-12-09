@@ -33,8 +33,11 @@ export default {
   },
   methods: {
     togglePhotoModal () {
-      this.$store.commit('TOGGLE_PHOTO_MODAL')
       this.$store.dispatch('getFriendGroups')
+        .then(() => {
+          this.$router.push('/feed')
+          this.$store.commit('TOGGLE_PHOTO_MODAL')
+        })
     },
     logout () {
       this.$store.dispatch('logout')

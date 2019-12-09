@@ -274,7 +274,7 @@ def search_by_poster():
     result.status_code = status
     return result
 
-@app.route('/feed/<photo_id>/like', methods=['POST'])
+@app.route('/feed/<photoID>/like', methods=['POST'])
 @jwt_required
 def like(photoID):
     status = 200
@@ -318,16 +318,15 @@ def post():
     response = {}
 
     user = get_jwt_identity()
+    request_data = request.get_json()
 
-    #grabs information from the forms
-    # filepath = request_data.get('filepath')
     try:
-        imageUrl = request.form['imageUrl']
-        imageExtension = request.form['imageExtension']
-        allFollowers = request.form['allFollowers']
-        caption = request.form['caption']
-        groupname = request.form['groupName']
-        groupowner = request.form['groupOwner']
+        imageUrl = request_data.get('imageUrl')
+        imageExtension = request_data.get('imageExtension')
+        allFollowers = request_data.get('allFollowers')
+        caption = request_data.get('caption')
+        groupname = request_data.get('groupName')
+        groupowner = request_data.get('groupOwner')
     except Exception as error:
         print("ERROR", file=sys.stdout)
         print(error, file=sys.stdout)
