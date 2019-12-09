@@ -32,7 +32,15 @@ export const getters = {
     return state.searchPoster
   },
   getFriendGroups (state) {
-    return state.ownedGroups.concat(state.memberGroups)
+    if (state.memberGroups && state.ownedGroups) {
+      return state.ownedGroups.concat(state.memberGroups)
+    } else if (state.memberGroups) {
+      return state.memberGroups
+    } else if (state.ownedGroups) {
+      return state.ownedGroups
+    } else {
+      return []
+    }
   }
 }
 
