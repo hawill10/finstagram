@@ -8,7 +8,8 @@ export const state = () => ({
   tagRequests: [],
   searchPoster: '',
   searchList: [],
-  friendGroups: []
+  ownedGroups: [],
+  memberGroups: []
 })
 
 export const getters = {
@@ -31,7 +32,15 @@ export const getters = {
     return state.searchPoster
   },
   getFriendGroups (state) {
-    return state.friendGroups
+    if (state.memberGroups && state.ownedGroups) {
+      return state.ownedGroups.concat(state.memberGroups)
+    } else if (state.memberGroups) {
+      return state.memberGroups
+    } else if (state.ownedGroups) {
+      return state.ownedGroups
+    } else {
+      return []
+    }
   }
 }
 
@@ -64,8 +73,11 @@ export const mutations = {
   SET_SEARCH_LIST (state, payload) {
     state.searchList = payload
   },
-  SET_FRIEND_GROUPS (state, payload) {
-    state.friendGroups = payload
+  SET_OWNED_GROUPS (state, payload) {
+    state.ownedGroups = payload
+  },
+  SET_MEMBER_GROUPS (state, payload) {
+    state.memberGroups = payload
   }
 }
 
@@ -251,34 +263,30 @@ export const actions = {
   },
   async getFriendGroups ({ commit }) {
     try {
-      const res = await this.$axios.get('friendgroups')
-      console.log(res)
-      // const friendGroup = {
-      //   ...res.data.data.owning,
-      //   members: [
-      //     ...res.data.data.member
-      //   ]
-      // }
-      // commit('SET_FRIEND_GROUPS', friendGroup)
+      const { data } = await this.$axios.get('friendgroups')
+      if (data) {
+        commit('SET_OWNED_GROUPS', data.ownedGroups)
+        commit('SET_MEMBER_GROUPS', data.memberGroups)
+      }
     } catch (e) {
       throw e.response.data.errMsg
     }
   },
-  async createFriendGroups ({ state, commit }, payload) {
+  async createFriendGroup ({ state, commit }, payload) {
     // groupName, description
     const { username } = state
     try {
       const res = await this.$axios.post('create_friendgroup', payload)
       if (res.status === 200) {
-        const updatedFriendGroups = [
-          ...state.friendGroups,
+        const updatedOwnedGroups = [
+          ...state.ownedGroups,
           {
             ...payload,
-            username,
-            member: []
+            groupOwner: username,
+            members: [username]
           }
         ]
-        commit('SET_FRIEND_GROUPS', updatedFriendGroups)
+        commit('SET_OWNED_GROUPS', updatedOwnedGroups)
       }
     } catch (e) {
       throw e.response.data.errMsg
@@ -286,15 +294,26 @@ export const actions = {
   },
   async addFriendToGroup ({ state, commit }, payload) {
     // memberName, groupName
+    console.log(payload)
     try {
       const res = await this.$axios.post('addfriend', payload)
       if (res.status === 200) {
-        const updatedFriendGroups = state.friendGroup.map((group) => {
+        const updatedOwnedGroups = state.ownedGroups.map((group) => {
           if (group.groupName === payload.groupName) {
-            group.member.push(payload.memberName)
+            const updatedMembers = [
+              ...group.members,
+              payload.memberName
+            ]
+            return {
+              ...group,
+              members: updatedMembers
+            }
+          }
+          return {
+            ...group
           }
         })
-        commit('SET_FRIEND_GROUPS', updatedFriendGroups)
+        commit('SET_OWNED_GROUPS', updatedOwnedGroups)
       }
     } catch (e) {
       throw e.response.data.errMsg

@@ -274,7 +274,7 @@ def search_by_poster():
     result.status_code = status
     return result
 
-@app.route('/feed/<photo_id>/like', methods=['POST'])
+@app.route('/feed/<photoID>/like', methods=['POST'])
 @jwt_required
 def like(photoID):
     status = 200
@@ -318,14 +318,15 @@ def post():
     response = {}
 
     user = get_jwt_identity()
+    request_data = request.get_json()
 
-    #grabs information from the forms
-    # filepath = request_data.get('filepath')
     try:
-        imageUrl = request.form['imageUrl']
-        imageExtension = request.form['imageExtension']
-        allFollowers = request.form['allFollowers']
-        caption = request.form['caption']
+        imageUrl = request_data.get('imageUrl')
+        imageExtension = request_data.get('imageExtension')
+        allFollowers = request_data.get('allFollowers')
+        caption = request_data.get('caption')
+        groupname = request_data.get('groupName')
+        groupowner = request_data.get('groupOwner')
     except Exception as error:
         print("ERROR", file=sys.stdout)
         print(error, file=sys.stdout)
@@ -343,6 +344,12 @@ def post():
                 cursor.execute(query)
 
                 maxID = cursor.fetchone()["maxID"]
+
+                if(not allFollowers):
+                    for name in groupname:
+                        query = "INSERT INTO SharedWith(groupOwner, groupName, photoID) VALUES(%s,%s,%s)"
+                        cursor.execute(query,(groupowner,name,maxID))
+
                 filename = secure_filename(str(maxID) + imageExtension)
                 fpath = os.path.join(UPLOAD_FOLDER, filename)
 
@@ -381,46 +388,48 @@ def show_friendgroups():
     if(user):
         try:
             with conn.cursor() as cursor:
+                #user is the owner
                 query = '''SELECT groupName, description, groupOwner
-                           FROM Friendgroup AS F
-                           WHERE F.groupOwner = %s'''
+                           FROM Friendgroup
+                           WHERE groupOwner = %s'''
                 cursor.execute(query,(user))
                 friendgroup = cursor.fetchall() 
-                #user is the owner
                 if (friendgroup):
                     for group_dict in friendgroup:
                         member_list = []
                         group = group_dict["groupName"]
 
                         query = '''SELECT member_username
-                                FROM BelongTo as B
-                                WHERE B.owner_username = %s AND B.groupName = %s'''
+                                FROM BelongTo
+                                WHERE owner_username = %s AND groupName = %s'''
                         cursor.execute(query,(user,group))
                         member_dict = cursor.fetchall()
                         for member in member_dict:
                             member_list.append(member["member_username"])
                         
                         group_dict["members"] = member_list
-                    #user is a member
-                    query = '''SELECT groupName, owner_username
-                            FROM BelongTo AS B
-                            WHERE B.member_username = %s'''
-                    cursor.execute(query,(user))
-                    membergroup = cursor.fetchall()
 
-                    for group in membergroup:
-                        groupname = group["groupName"]
-                        groupowner = group["owner_username"]
+                #user is a member
+                query = '''SELECT groupName, owner_username AS groupOwner
+                        FROM BelongTo
+                        WHERE member_username = %s'''
+                cursor.execute(query,(user))
+                membergroup = cursor.fetchall()
+                updatedmembergroup = []
+                for group in membergroup:
+                    groupname = group["groupName"]
+                    groupowner = group["groupOwner"]
+                    if (groupowner != user):
                         query = '''SELECT description
-                                FROM Friendgroup as F
-                                WHERE F.groupName = %s AND F.groupOwner = %s'''
+                                FROM Friendgroup
+                                WHERE groupName = %s AND groupOwner = %s'''
                         cursor.execute(query,(groupname, groupowner))
                         description_dict = cursor.fetchone()
                         group["description"] = description_dict["description"]
 
                         query = '''SELECT member_username
-                                FROM BelongTo as B
-                                WHERE B.owner_username = %s AND B.groupName = %s'''
+                                FROM BelongTo
+                                WHERE owner_username = %s AND groupName = %s'''
                         cursor.execute(query,(groupowner, groupname))
                         member_dict = cursor.fetchall()
 
@@ -428,9 +437,10 @@ def show_friendgroups():
                         for i in member_dict:
                             member_list.append(i["member_username"])
                         group["members"] = member_list
+                        updatedmembergroup.append(group)
 
-                    friendgroup.append(membergroup)
-                    response["friendgroups"] = friendgroup
+                response["memberGroups"] = updatedmembergroup
+                response["ownedGroups"] = friendgroup
 
         except Exception as error:
             errorMsg = error.args
@@ -461,8 +471,8 @@ def CreateFriendGroup():
         try:
             with conn.cursor() as cursor:
                 query = '''SELECT count(*) AS cnt
-                           FROM Friendgroup as F
-                           WHERE F.groupOwner = %s and F.groupName = %s'''
+                           FROM Friendgroup
+                           WHERE groupOwner = %s and groupName = %s'''
                 cursor.execute(query, (user, groupname))
                 data = cursor.fetchone()
                 exists = data['cnt']
@@ -473,6 +483,8 @@ def CreateFriendGroup():
                 else:
                     query = "INSERT INTO Friendgroup(groupOwner, groupName, description) VALUES(%s, %s, %s)"
                     cursor.execute(query, (user, groupname, description))
+                    query = "INSERT INTO BelongTo(member_username, owner_username, groupName) VALUES(%s,%s,%s)"
+                    cursor.execute(query,(user,user,groupname))
                     conn.commit()
         except pymysql.err.IntegrityError:
             response['errMsg'] = "%s is already taken." % (username)  
@@ -484,52 +496,6 @@ def CreateFriendGroup():
     result = jsonify(response)
     result.status_code = status
     return result
-
-# @app.route('/friendgroups/<groupname>', methods=['GET'])
-# @jwt_required
-# def showMembers(groupname):
-#     response = {}
-#     status = 200
-
-#     user = get_jwt_identity()
-#     group_data = request.get_json()
-#     group_code = group_data.get("group_code") #whether user is the owner(1) or the member(0)
-#     owner = group_data.get("owner")
-
-#     if(user):
-#         try:
-#             with conn.cursor() as cursor:
-#                 if(group_code):
-#                     query = '''SELECT member_username
-#                                FROM BelongTo as B
-#                                WHERE B.owner_username = %s AND B.groupName = %s'''
-#                     cursor.execute(query,(user,groupname))
-#                     members = cursor.fetchall()
-#                     response["owner"] = user
-#                     response["members"] = members
-
-#                 else:
-#                     query = '''SELECT member_username
-#                                FROM BelongTo as B
-#                                WHERE B.owner_username = %s AND B.groupName = %s'''
-#                     cursor.execute(query,(owner,groupname))
-#                     members = cursor.fetchall()
-#                     response["owner"] = owner
-#                     response["members"] = members
-
-#         except Exception as error:
-#             errorMsg = error.args
-#             response["errMsg"] = errorMsg
-#             status = 400
-
-#     else:
-#         response["errMsg"] = "You have to login"
-#         status = 401
-
-#     result = jsonify(response)
-#     result.status_code = status
-#     return result
-
 
 @app.route('/addfriend', methods=['POST'])
 @jwt_required
@@ -547,9 +513,9 @@ def addFriend():
         try:
             with conn.cursor() as cursor:
                 query = '''SELECT count(*) AS cnt
-                           FROM BelongTo as B
-                           WHERE B.owner_username = %s and B.member_username = %s'''
-                cursor.execute(query, (user, friendname))
+                           FROM BelongTo
+                           WHERE groupName = %s and owner_username = %s and member_username = %s'''
+                cursor.execute(query, (groupname, user, friendname))
                 data = cursor.fetchone()
                 exists = data['cnt']
 
@@ -561,7 +527,7 @@ def addFriend():
                     cursor.execute(query, (friendname, user, groupname))
                     conn.commit()
         except pymysql.err.IntegrityError:
-            response['errMsg'] = "%s is already taken." % (friendname)  
+            response['errMsg'] = "%s is not a valid user." % (friendname)  
             status = 400
     else:
         response["errMsg"] = "You have to login"
