@@ -669,7 +669,7 @@ def follow_request():
         if (user):
             try:
                 with conn.cursor() as cursor:
-                    # insert Follow entity
+                    # get everyone who is following the user
                     query = '''SELECT username_follower
                                 FROM Follow
                                 WHERE username_followed = %s AND followstatus = False
